@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.15",
+    "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
     "livestock_visualisation": "file:",
     "react": "^19.0.0",
