@@ -1,13 +1,40 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import Section1 from './sections/section1/section1'
 import Section2 from './sections/section2/section2'
 import Section3 from './sections/section3/section3'
 import Section4 from './sections/section4/section4'
+import { loadData, updateData } from './database/dataloader'
+import { getAvailableYears, getAvailableLocations } from './database/database'
 
 function App() {
   const [year, setYear] = useState('2019')
   const [location, setLocation] = useState('Wellington')
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const [availableYears, setAvailableYears] = useState<string[]>([])
+  const [availableLocations, setAvailableLocations] = useState<string[]>([])
+
+  // Load data on component mount
+  useEffect(() => {
+    const initData = async () => {
+      const success = await loadData();
+      if (success) {
+        setDataLoaded(true);
+        setAvailableYears(getAvailableYears());
+        setAvailableLocations(getAvailableLocations());
+        updateData(year, location);
+      }
+    };
+
+    initData();
+  }, []);
+
+  // Update filtered data when year or location changes
+  useEffect(() => {
+    if (dataLoaded) {
+      updateData(year, location);
+    }
+  }, [year, location, dataLoaded]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-4">
@@ -24,9 +51,9 @@ function App() {
               onChange={(e) => setYear(e.target.value)}
               className="w-full h-full px-2 bg-gray-100 rounded"
             >
-              <option value="2019">2019</option>
-              <option value="2018">2018</option>
-              <option value="2017">2017</option>
+              {availableYears.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
             </select>
           </div>
           
@@ -42,9 +69,9 @@ function App() {
               onChange={(e) => setLocation(e.target.value)}
               className="w-full h-full px-2 bg-gray-100 rounded"
             >
-              <option value="Wellington">Wellington</option>
-              <option value="Auckland">Auckland</option>
-              <option value="Christchurch">Christchurch</option>
+              {availableLocations.map(loc => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
             </select>
           </div>
         </div>
