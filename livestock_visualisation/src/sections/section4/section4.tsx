@@ -5,6 +5,7 @@ interface Section4Props {
   location: string
 }
 
+// Ricky Section 4
 const Section4: React.FC<Section4Props> = ({ year, location }) => {
   return (
     <div className="h-full w-full flex items-center justify-center">

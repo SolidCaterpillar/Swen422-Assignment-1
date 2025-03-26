@@ -5,6 +5,7 @@ interface Section2Props {
   location: string
 }
 
+// Jackie Section 2
 const Section2: React.FC<Section2Props> = ({ year, location }) => {
   return (
     <div className="h-full w-full flex items-center justify-center">
