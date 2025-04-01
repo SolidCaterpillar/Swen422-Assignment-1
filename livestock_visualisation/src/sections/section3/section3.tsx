@@ -16,13 +16,13 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   const [data, setData] = useState<FilteredData | null>(null)
   const chartRef = useRef<SVGSVGElement | null>(null)
 
-  // 1. Load the current filtered data whenever year or location changes
+  // Load the current filtered data whenever year or location changes
   useEffect(() => {
     const currentData = getCurrentData()
     setData(currentData)
   }, [year, location])
 
-  // 2. Render the donut chart using D3
+  // Render the donut chart using D3
   useEffect(() => {
     // If there's no data or no chart container, do nothing
     if (!data || !chartRef.current) return
