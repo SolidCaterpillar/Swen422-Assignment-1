@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.0.15",
-    "@types/d3": "^7.4.3",
     "d3": "^7.9.0",
     "livestock_visualisation": "file:",
     "react": "^19.0.0",
@@ -20,6 +19,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
+    "@types/d3": "^7.4.3",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@vitejs/plugin-react": "^4.3.4",
