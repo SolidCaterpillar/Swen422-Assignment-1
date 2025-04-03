@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react'
-import { getCurrentData, FilteredData } from '../../database/database'
+import { getCurrentData, FilteredData, getRawData, filterData } from '../../database/database'
 import * as d3 from 'd3'
 
 interface TimelineData {
@@ -25,63 +25,40 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
   const year2After = String(parseInt(year) + 2)
   const yearRange = [year2Before, year1Before, year, year1After, year2After]
 
-  // Load real data for all years in the range
+    // Load data for all years in the range
   useEffect(() => {
-    // This is where you would call your database function to get real data for each year
-    // For demonstration purposes, I'm assuming you have a function like:
-    // getDataForYearAndLocation(year: string, location: string): Promise<FilteredData>
+    // Function to load data for a specific year
+    const fetchDataForYear = (targetYear: string): TimelineData[] => {
+      // Filter raw data for the specified year and location
+      const filteredData = getRawData().filter(
+        item => item.year === targetYear && item.geography_name === location
+      );
+      
+      // Convert to TimelineData format
+      return filteredData.map(item => ({
+        year: item.year,
+        animal: item.animal,
+        count: item.count
+      }));
+    };
+
+    // Get data for the current year using the existing function
+    const currentFiltered = filterData(year, location);
+    setData(currentFiltered);
     
-    // Import this function from your database module
-    const getDataForYearAndLocation = async (yearStr: string, locationStr: string) => {
-      // Replace this with actual API call to your database
-      // For now, let's use getCurrentData() as a mock and pretend it's for the specified year
-      return getCurrentData();
-    };
-
-    const fetchDataForAllYears = async () => {
-      try {
-        // Get current year data first to display something immediately
-        const currentYearData = await getDataForYearAndLocation(year, location);
-        setData(currentYearData);
-        
-        // Fetch data for all years
-        const allYearsData: TimelineData[] = [];
-        
-        // Process each year in parallel
-        const dataPromises = yearRange.map(async (yr) => {
-          try {
-            const yearData = await getDataForYearAndLocation(yr, location);
-            
-            // Convert to TimelineData format
-            if (yearData && yearData.data) {
-              return Object.entries(yearData.data).map(([animal, count]) => ({
-                year: yr,
-                animal,
-                count
-              }));
-            }
-            return [];
-          } catch (error) {
-            console.error(`Error fetching data for year ${yr}:`, error);
-            return [];
-          }
-        });
-        
-        // Wait for all data to be fetched
-        const yearsDataArrays = await Promise.all(dataPromises);
-        
-        // Combine all data
-        yearsDataArrays.forEach(yearDataArray => {
-          allYearsData.push(...yearDataArray);
-        });
-        
-        setTimelineData(allYearsData);
-      } catch (error) {
-        console.error("Error fetching timeline data:", error);
+    // Get data for all years in our range
+    const allYearsData: TimelineData[] = [];
+    
+    // Add data for each year in the range
+    yearRange.forEach(yr => {
+      const yearData = fetchDataForYear(yr);
+      if (yearData.length > 0) {
+        allYearsData.push(...yearData);
       }
-    };
-
-    fetchDataForAllYears();
+    });
+    
+    // Update the state with all years' data
+    setTimelineData(allYearsData);
   }, [year, location, yearRange]);
 
   // Render the line chart using D3
@@ -94,9 +71,6 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
 
     // Get unique animals for creating multiple lines
     const animals = Array.from(new Set(timelineData.map(d => d.animal)))
-
-    // Get valid data points (no null counts)
-    const validTimelineData = timelineData.filter(d => d.count !== null)
 
     // Setup dimensions and margins
     const margin = { top: 50, right: 150, bottom: 60, left: 80 }
@@ -114,8 +88,8 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .range([0, width])
       .padding(0.5)
 
-    // Find the maximum count for y scale
-    const maxCount = d3.max(validTimelineData, d => d.count as number) || 0
+    // Find the maximum count for y scale (considering all counts)
+    const maxCount = d3.max(timelineData.filter(d => d.count !== null), d => d.count as number) || 0
 
     // Y scale for counts
     const y = d3.scaleLinear()
@@ -128,11 +102,21 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .domain(animals)
       .range(d3.schemeCategory10)
 
+    // Line style variations (solid, dashed, dotted, etc.)
+    const lineStyles = [
+      "0", // solid
+      "5,5", // dashed
+      "2,2", // dotted
+      "10,3,3,3", // dash-dot
+      "15,5,2,5", // long dash-short dash
+      "5,2,5" // dash-gap-dash
+    ];
+
     // Line generator
     const line = d3.line<TimelineData>()
       .x(d => x(d.year) || 0)
       .y(d => y(d.count as number))
-      .defined(d => d.count !== null)  // Skip null values
+      .defined(d => d.count !== null) // Skip null values
       .curve(d3.curveMonotoneX) // Smooth curve
 
     // Add the x-axis
@@ -172,7 +156,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .attr('text-anchor', 'middle')
       .style('font-size', '16px')
       .style('font-weight', 'bold')
-      .text(`Livestock Trends in ${location} (${year2Before}-${year2After})`)
+      .text(`Livestock Distribution in ${location} (${year2Before}-${year2After})`)
 
     // Highlight the selected year with a vertical line
     svg.append('line')
@@ -180,41 +164,45 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .attr('x2', x(year) || 0)
       .attr('y1', 0)
       .attr('y2', height)
-      .attr('stroke', '#888')
+      .attr('stroke', '#333')
       .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '5,5')
+      .attr('stroke-dasharray', '3,3')
       .attr('opacity', 0.7)
 
-    // Create a group for each animal and draw its line
-    animals.forEach(animal => {
-      const animalData = timelineData
-        .filter(d => d.animal === animal && d.count !== null)
-        .sort((a, b) => yearRange.indexOf(a.year) - yearRange.indexOf(b.year))
+    // Add a total line if we have enough animals
+    if (animals.length > 1) {
+      // Create total data points by summing all animals for each year
+      const totalByYear = yearRange.map(yr => {
+        const yearData = timelineData.filter(d => d.year === yr && d.count !== null);
+        const total = yearData.reduce((sum, d) => sum + (d.count as number), 0);
+        return {
+          year: yr,
+          animal: 'Total',
+          count: total
+        };
+      });
 
-      // Only draw lines if we have enough data points
-      if (animalData.length > 1) {
-        // Add the line path
-        svg.append('path')
-          .datum(animalData)
-          .attr('fill', 'none')
-          .attr('stroke', color(animal))
-          .attr('stroke-width', 3)
-          .attr('d', line as any) // Type assertion needed due to null handling
-      }
+      // Draw the total line (thicker)
+      svg.append('path')
+        .datum(totalByYear)
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 3)
+        .attr('d', line)
 
-      // Add data points for non-null values
-      svg.selectAll(`.point-${animal.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '_')}`)
-        .data(animalData)
+      // Add circle markers for total
+      svg.selectAll('.total-point')
+        .data(totalByYear)
         .join('circle')
-        .attr('class', `point-${animal.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '_')}`)
+        .attr('class', 'total-point')
         .attr('cx', d => x(d.year) || 0)
         .attr('cy', d => y(d.count as number))
         .attr('r', 5)
-        .attr('fill', color(animal))
-        .attr('stroke', 'white')
-        .attr('stroke-width', 1.5)
+        .attr('fill', 'white')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 2)
         .on('mouseover', function (event, d) {
-          // Highlight point on hover
+          // Highlight point
           d3.select(this)
             .transition()
             .duration(200)
@@ -228,10 +216,9 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
             .attr('text-anchor', 'middle')
             .style('font-size', '12px')
             .style('font-weight', 'bold')
-            .text(`${d.animal}: ${d3.format(',')(d.count as number)}`)
+            .text(`Total: ${d.count !== null ? d3.format(',')(d.count) : 'N/A'}`)
         })
         .on('mouseout', function () {
-          // Remove highlight and tooltip
           d3.select(this)
             .transition()
             .duration(200)
@@ -239,23 +226,127 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
 
           svg.selectAll('.tooltip').remove()
         })
+    }
+
+    // Create individual lines for each animal
+    animals.forEach((animal, i) => {
+      const animalData = timelineData
+        .filter(d => d.animal === animal && d.count !== null)
+        .sort((a, b) => yearRange.indexOf(a.year) - yearRange.indexOf(b.year));
+
+      // Only draw lines if we have enough data points
+      if (animalData.length > 1) {
+        // Add the line path
+        svg.append('path')
+          .datum(animalData)
+          .attr('fill', 'none')
+          .attr('stroke', color(animal))
+          .attr('stroke-width', 2)
+          .attr('stroke-dasharray', lineStyles[i % lineStyles.length])
+          .attr('d', line as any)
+
+        // Add data points
+        svg.selectAll(`.point-${animal.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '_')}`)
+          .data(animalData)
+          .join('circle')
+          .attr('class', `point-${animal.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '_')}`)
+          .attr('cx', d => x(d.year) || 0)
+          .attr('cy', d => y(d.count as number))
+          .attr('r', 4)
+          .attr('fill', color(animal))
+          .attr('stroke', 'white')
+          .attr('stroke-width', 1)
+          .on('mouseover', function (event, d) {
+            // Highlight point
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('r', 7)
+
+            // Show tooltip
+            svg.append('text')
+              .attr('class', 'tooltip')
+              .attr('x', x(d.year) || 0)
+              .attr('y', y(d.count as number) - 15)
+              .attr('text-anchor', 'middle')
+              .style('font-size', '12px')
+              .style('font-weight', 'bold')
+              .text(`${d.animal}: ${d.count !== null ? d3.format(',')(d.count) : 'N/A'}`)
+          })
+          .on('mouseout', function () {
+            d3.select(this)
+              .transition()
+              .duration(200)
+              .attr('r', 4)
+
+            svg.selectAll('.tooltip').remove()
+          })
+      }
     })
 
     // Add legend
     const legend = svg.append('g')
       .attr('transform', `translate(${width + 20}, 0)`)
 
+    // Add Total to legend first if we have multiple animals
+    if (animals.length > 1) {
+      const totalLegendRow = legend.append('g')
+        .attr('transform', 'translate(0, 0)')
+
+      totalLegendRow.append('line')
+        .attr('x1', 0)
+        .attr('y1', 7.5)
+        .attr('x2', 30)
+        .attr('y2', 7.5)
+        .attr('stroke', '#333')
+        .attr('stroke-width', 3)
+
+      totalLegendRow.append('circle')
+        .attr('cx', 15)
+        .attr('cy', 7.5)
+        .attr('r', 4)
+        .attr('fill', 'white')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 2)
+
+      totalLegendRow.append('text')
+        .attr('x', 35)
+        .attr('y', 10)
+        .attr('text-anchor', 'start')
+        .style('font-size', '12px')
+        .style('alignment-baseline', 'middle')
+        .style('font-weight', 'bold')
+        .text('Total')
+    }
+
+    // Add animal entries to legend
     animals.forEach((animal, i) => {
+      const yOffset = animals.length > 1 ? 25 : 0; // Add space if we have a Total
       const legendRow = legend.append('g')
-        .attr('transform', `translate(0, ${i * 20})`)
+        .attr('transform', `translate(0, ${yOffset + i * 25})`)
 
-      legendRow.append('rect')
-        .attr('width', 15)
-        .attr('height', 15)
+      // Line style sample
+      legendRow.append('line')
+        .attr('x1', 0)
+        .attr('y1', 7.5)
+        .attr('x2', 30)
+        .attr('y2', 7.5)
+        .attr('stroke', color(animal))
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', lineStyles[i % lineStyles.length])
+
+      // Point sample
+      legendRow.append('circle')
+        .attr('cx', 15)
+        .attr('cy', 7.5)
+        .attr('r', 4)
         .attr('fill', color(animal))
+        .attr('stroke', 'white')
+        .attr('stroke-width', 1)
 
+      // Label
       legendRow.append('text')
-        .attr('x', 20)
+        .attr('x', 35)
         .attr('y', 10)
         .attr('text-anchor', 'start')
         .style('font-size', '12px')
@@ -263,7 +354,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
         .text(animal)
     })
 
-  }, [timelineData, chartRef, year, location, yearRange, year2Before, year2After])
+  }, [timelineData, chartRef, year, location, yearRange, year2Before, year2After]);
 
   // Render fallback if no data
   if (!data) {
@@ -276,13 +367,19 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
     )
   }
 
+  // Calculate totals for the data table
+  const tableTotals = yearRange.map(yr => {
+    const yearData = timelineData.filter(d => d.year === yr && d.count !== null);
+    return yearData.reduce((sum, d) => sum + (d.count as number), 0);
+  });
+
   // Main render with chart and data table
   return (
     <div className="h-full w-full flex flex-col">
       <div className="flex-grow">
         <svg ref={chartRef} width="100%" height="100%"></svg>
       </div>
-      <div className="p-2 overflow-auto max-h-[100px]">
+      <div className="p-2 overflow-auto max-h-[120px]">
         <table className="min-w-full border-collapse text-xs">
           <thead>
             <tr>
@@ -308,6 +405,15 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
                 })}
               </tr>
             ))}
+            {/* Add a totals row */}
+            <tr className="font-bold bg-gray-100">
+              <td className="border px-2 py-1">Total</td>
+              {yearRange.map((yr, index) => (
+                <td key={yr} className={`border px-2 py-1 text-right ${yr === year ? 'font-bold' : ''}`}>
+                  {tableTotals[index].toLocaleString()}
+                </td>
+              ))}
+            </tr>
           </tbody>
         </table>
       </div>
