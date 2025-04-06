@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
+import { filterData, getCurrentData } from '../../database/database';
 
 const simplemaps_countrymap_mapinfo = {
   map_name: "country",
@@ -27,97 +28,158 @@ const simplemaps_countrymap_mapinfo = {
     NZSTL: "M140.2 1258.2l0.8-1.5 1.7-1.1 1.6-0.2 0.7 1.4-0.9 0.8-1.7 1.3-1.6 0.5-0.6-1.2z m20.5-46.4l-0.8 0.7-1.1 0.4-0.9-0.4-0.5-1.3 0.3-1.4 0.9-0.7 1-0.1 0.9 0.2 0.9 0.8-0.7 1.8z m62.2-5.4l1.1 2.3-0.9 2.1-1.5 1.7-0.6 1 0.3-1.1-0.5-0.9-0.7-1-0.6-1.3 1.1-0.1 1-0.4 0.8-0.9 0.5-1.4z m-27.6 32.6l3.2 2.2 0.9 1 0.1 0.6-0.5 0.4-0.7 0.1-0.6-0.1-0.4-0.3-0.5-1.4-0.5-0.4-1.6-0.1-0.4 0.7 0.5 2.6-0.8 0.5-2.4-1.1 0.8 1.6-5.3 0-4.4 0.8-1.7 0.8-4.4 4.2-1.4 1.7-0.9 0.8-1.2-0.1-1.3-0.5-0.9-0.9-1.1-0.6-2.6 0.4-0.8-0.1-0.7-1.3-0.5-1.5-0.6-0.7-1.4 1.4-1.2 0.3-0.6 0.3 0 0.4-0.4 2.5-1.2-0.8-3.6 2.9-2 0.8 1.2 1.3 2.2-0.4 4.3-1.7-0.8 2-0.8 1.4-2.2 2.4 0-2.6-0.9 0.1-1.3 1.3-1 1.5-1.3 0.7-2.3 0.6-2.4 0.2-1.5-0.5-0.4-2 0.5-2.7 0.8-2.5 0.9-1.6 0.7-0.7 1.4-0.2 1.4-1.2 2.4-1.2-1.2-0.8 0-1 0.5-1.1 0.3-1.3-0.1-1.6-0.2-1.2 0-1.1 0.5-1.5 0.8-1 0.7-0.7 1.7-1.1 1.1-0.4 0.9 0.2 0.9 0.5 0.9 0.1 1.2-1.4-0.2-2.5-0.6-2.8 0.4-2.2 0.8-0.5 2.1 0 0.9-0.9 1.2-2 0.4-1.1 0.2-1.5-0.4-2.3-0.9-2.2-2.4-3.6-0.4-1.1 0.3-1 0.5-0.7 0.3-0.8 0-0.6-0.2-0.5-0.2-0.5-0.3-0.5-0.3-0.7 0.1-0.6 0.3-0.5 0.2-0.6 0.4-2.9 0.9-1.5 1.6-0.5 2.1-0.1 1.9 0.7 1.1 0.2 0.9-0.6 1-1 0.8-0.2 3.3 1.8 1.4 1.1 1.2 1.4 6.3 9 1 1 1.2 0.8 1 1 0.4 1.4 0.9 0.3 1.6 0.9 0.8 1.3-1.4 1.4 1.5 0.7 0 0.7-1.8 0.6-6.4-0.6 0.5-1.4-4-0.2-1.3 0.7 0.7 2-0.2 1.1-3.4 4.9 1.8-0.2 2.4-3.2 1.6-0.8 0.7 0.3 1.9 1.5 1.8 0.5 2.8 1.2-0.3 0.7-0.2 0.6-0.4 0.4-0.5 0.4 0 0.7 0.8 0 3.8-1.4 0.9-0.1 0.9-0.5 0.6-0.2 0.2 0.4 0.2 0.8 0.6 0.8 0.6 0.6 0.6 0.3-0.4 1-0.4 2.6-0.2 0.7-0.8 0.5-0.8-0.1-0.8-0.3-1-0.1 0 0.7z m-105-146.3l1.3 1 0.9 1.9 0.6 2.3 0.2 2.2-0.3 2.2-0.8 1.6-1.2 1-1.6 0.2-0.1-0.6-0.5-1-0.6-0.5-0.5 1.8-0.6 0.4-0.6 0.1-0.6-0.2-0.4-1.1-0.3-2-0.2-2 0-1.2-1-1.9-1.2 0.2-4.4 5.2-1.1 0.8-1.5 0.5 0.4-1.3 0.6-1.8 0.9-1.7 0.8-0.7 0.2-0.3 0.8-1.5 0.6-1.5 0.8-0.3 1.8 0.1 5.6-2 1.3-0.1 0.7 0.2z m18.5-45.6l0.6 3.6 1 3.4 2.7 6.8-2.4 0.4-0.9-0.2-1.3-1.3-1.1-0.7-1.6-0.6-1.3-0.7-0.6-1.4-0.8-1.2-0.1-0.8 0.7-0.4-0.2-0.4 0.5-1 4.3-6.8 0 0.4 0.1 0.3 0.2 0.3 0.2 0.3z m156.6 147.6l-0.9-0.3-0.6 0.7 0 2.3-0.8 0.8-0.2 0.5-0.2 0.5-0.4 0.2-2.1 0-1.3-0.4-0.7-1-0.5-1-0.5-0.5-0.9 0.1 0 1 0.2 1.2-0.3 1.3-1.8 1.1-2.4-0.6-2.5-1.2-1.9-0.7-2.3 0.1-1.3-0.2-0.8-1.3-1.8-6.4-0.1-1-0.4-1.2-1 0-2.1 0.8-7.2 1.4-2.4 0 0.6-1.1 0.8-0.3 1-0.2 0.9-0.5-1.4-0.9-1.7-0.4-3.6-0.1 0.6 1.4 0.9 1 0.4 0.7-0.9 1.1 0.3 0.3 0.4 0.8 0.3 0.3-3.8 1.3-12.2-1.3 0.9-1.8 0.4-0.5 0.6-0.4 1-0.4 2.5 0.1 0.9 0.3 0.7 1.1 2.1 0.5 1.2-0.6-1.6-1.8-2-0.8-6.2 0.1-2.8-1.8-1.5-0.3-0.6 1.8 0.5 2.1 2.1 2.7 0.9 1.9-2-0.4-2.5-3.1-1.6-0.8-0.3-0.4-0.1-1-0.4-1-1.9-0.6-0.5-0.6-0.3-0.9-0.2-1.2 2.2-0.6 0.8 0 0.7 0.3 0.1 0.2 0 0.5 0.4 0.7 0.4-0.7 3.7-3.1 0.7-2.7-0.5-3.4-1.3-2.4-1.8 0 0.5 2.6-0.7 2.4-1.3 1.5-1.5-0.2-0.8-1.4-1.4-4.2-3.8-7.1-1.2-1.2-2-0.6-6.9 1.3-1 0.5-0.1 1.2 0.3 1.2-0.2 0.5-1-0.3-1.3-0.6-1.2-0.4-0.9 0.4-2.1-0.4-1.3 0.1-0.6 0.9-0.4 1.1-0.9 0.3-0.8-0.2-0.7-0.2-1-0.6-0.6-0.1-0.5 0.3-1 0.9-0.5 0.2-0.8-0.3-0.6-0.7-0.7-1-0.8-0.4-0.6-0.9-1-1.9-0.7-0.7-1.7-1-0.8-0.7 1-0.6 0.9-0.4 0.9-0.6 0.7-1.2-3.7-4.9-1.7-2.9 0-2-1.1-1-2.9-0.3-1.4-0.4-3.3-2.3-1-0.2-8.1-0.9-0.6 0.2-0.4 0.7-0.1 1.7-0.2 0.8-0.9 1.6-0.2 1.4-0.2 1.3-0.4 1.5-0.9 1.3-1.1 0.3-2.4-0.2-1.1 0.4-2.2 1.4-1 0.4-1.4-0.2-2.9-1.1-1.5-0.1-1.2 0.3-0.6 0.3-0.4 0.4-0.5 0.3-0.4-0.4-0.3-0.6-0.3-0.3-0.8-0.2-4.5-2.2-1.2 0.1-1.2 0.2-1.2-0.1-4.8-1.3-9.7 0.3-4.8-0.9-3.9-2.9-2.1-2.9-0.4-1 0.5-0.6 2-0.9 0.7-0.6 2.7-3.1 2.4-3.5 2-4.7 1.1-2.1 1.5-0.9 2-0.5 3.3-2.7 1.7-1 0-0.7-1.5 0.2-4.3 2.7-3.1 1.1-1.7 1-1 1.3-0.3 1.1 0.2 0.8 0.2 0.6-0.1 1-0.3 0.2-2.2 2.5-0.1 0.4-0.2-0.1-0.6-0.9 0-0.5 0.3-0.8 0-0.8-0.8-0.7-0.9 3.1-2.2 1.3-5.2 1.2 0-1.8 0.3-1.6 0.6-0.8 1.1 0.7 0.3-3.3 0.7-2.2 1.4-1.5 2-1.3 4.2-1.1 1.9-0.9 1.1-2.3-2.4 1.2-2.4 0.9-1-0.1-1.3-0.4-1.1-0.6-0.2-0.6 3.8-4.8 0.6-1 0.2-0.8-0.7-0.8-0.8 0.1-0.8 0.7-0.7 0.7-0.2 0.5-0.4 0.6-0.2 0.8-0.1 0.5-1.3 1-0.4 0.4-1.9 3.2-0.3 1-1 1.1-6.7 2-1 0.6-1.6 1.8-0.6 0.4-0.5-0.5-0.5-1.2-0.4-1.3 0-0.8 0.3-1.2-0.1-1.3-0.4-2.1 0-9.1 0.5-2.3 1.1-1 4.6-0.7 4.9 0-0.6 0.7 0.6 0.7 1.7-1.5 2.1-0.6 4.4 0 1.8-0.3 3.8-1.5 1.9-0.3 2.1 0.4 1-0.1 0.8-0.6 0.6-0.8 0.6-0.7 1.4-1 3.5-1.5 1.4-1.2 0.9-2.1-3 1.2-1.1 0.2-5-0.7-6.6 2-1.7-0.6 1.3-2.9 0.9-1.1 1.2-0.9 3.8-1.1 1.1-1-6.8 1.1-1.2-0.4-0.6-2.4 0.1-2.2 0.8-1.7 1.6-0.6 1.9-0.5 3.5-1.9 2.1-0.3 3.7 1.3 2 0.1 1.5-1.4-2.4 0-1.1-0.4-0.8-1.1 4.6-1.4 2-1.6 0.6-2.5-9.4 5-5.8 1.2-3.9 2.2-0.7 0.1-1.6 0.4-0.8 0.1-1.2-0.1-0.6-0.4-0.9-1.9 0-1.5 2.7-5.7 1.2-6.1 0.7-1.6 3.2-1.6 3.4 1.4 3.4 2.3 3.1 0.7-0.8-2.4-1.1-2.5-1.1-0.9-0.9 2.3-1.3-1-2.7-1.5-1.3-0.9-0.9-1.1-0.2-1.1 0.4-1.3 0.9-1.7 2.4-2.5 1.6-1.2 0.7 0.3 0.5 1.7 1.3 1.3 3 1.4-0.7 0.5-0.5 0.6-0.5 0.8-0.2 1 2.2-0.3 2-1 1.9-0.1 2 2 0.5 1 0.3 0.9-0.1 1-0.7 1.2-1.8 1.5-0.8 0.9 0.7 0.5 2.4-0.2 0.8-0.5 0.9-1.1 0.5-1.3 0.3-1.3 0.5-0.5 1.9 1.7 0.9 0.6 0.7 0.9 0.5 2.3 1.3 3.4 0.3-0.2 0.1-0.4 0.6 0.4 0.9 0.5 0.5 0.5-0.4-3.3-3.7-4.8-7.1-7.2 1-1.4 1.2-0.6 7.2-2.2 1.3 0.1 0.7 0.8 1.2 2.4 1 0.9 1.3 0.5 1.5 0.1 1.3-0.6 0.7-1.3-1.1-0.4-2.5 0.1-1-0.7-0.6-1-0.2-0.5 0.1-1.9 0.4-1.1 0.6-0.5 0-0.1-2.6 0.1-2.7 1.2-1.8 0.5-5.8 0.6-1.2-0.7-0.1-1.3-0.7-2-0.4-2-1.3-1.1-0.3-1.2-0.2-4.4 0.5-1.7 1.6-1.1 2.1 0.1 1.7 1.2 2.7 3.9 0.8 0.6 1.2 0.5 1.1 0 0.5-0.8-0.3-0.6-2.6-2.1-2.6-3.4-1.4-1.3-1.8-0.1 2.8-4.6 1.7-1.7 1.6 0.4 2.6 4.5 0.2 1.5-0.1 1.3 0.1 1.1 0.8 0.9 0.4-1.4-0.2-2 0.3-0.8 1.1-0.5 4.2 0.5-1-1.2-4-1.5-1.5-1-1.2-1.6-0.8-1.7-0.2-1.6 1-1.6 1.7-0.7 1.8 0.6 1.9 0.9 1.9 0.6 1.4 0.7 1.8 1.5 1.5 0.9 1-1.1-1.3-0.4-8.5-4.9-0.8-0.9 0.3-1.4 1.2-1.4 3.5-3 1.2-0.6 1.3-0.3 1.7-0.1-0.4-0.4-0.7-1.2-0.4-0.4 5.5-3.3 2.3-0.2 1 3.1 0.2 0.5 0.5 0.5 0.5 0.8 0.2 0.9-0.2 1-0.7 1.9-0.1 0.9 0.6 1.4 0.9 1 0.5 1.2-0.5 1.9 2.6 0.3 1.2-0.2-0.2-1.1-0.3-0.6-0.2-0.7-0.2-0.8 0-0.7-0.2-0.6-1.5-1.4-0.2-1 0.2-1.5 0-1.6-0.5-1.4-0.5-1-1-3.3-0.2-1.2 0.9-3.4 2-2.2 2.6-0.3 2.2 2.2 0.5 1.3-0.2 0.7-0.5 0.7-0.7 1.4-0.3 1.8 0.2 1.5 0.7 1.2 1.2 0.9 0.2-2.2 0.6-1.5 0.7-1.3 0.6-1.8-0.2-2-1.8-2.1-0.5-1.7-0.8-1.3-0.1-0.7 1.3-0.7 0.8-0.7 0.7-0.5 0.8 0.6 1.3 1.9 1.2 1.2 1.3 0.7 1.8 0.5-1.2-0.6-2.7-3.4-1.8-1.7-0.3-1 0.6-1.4 1.1-0.9 3.8-1.1 0.5-0.6 0.5-1.4 0.4-0.7 0.5-0.3 1.2-0.4 0.5-0.4 2-2.2 2.1-0.8 2.1 0.4 3.1 2.9 2.4 1.4 0.9 1 2.2 4.4 0.5-1.1 0.1-1.5-0.1-1.5-0.5-1.3-0.4-0.4-1.6-0.9-1.9-2.1-0.4-0.3-0.4-0.1-0.3-0.2-0.4-0.7-0.1-0.8 0.1-2.6-0.4-2.9-0.5-1.4-0.5-1.2 1.7-2.4 5.8-6.7 2-1.8 2.6-1.8 1.8-2.3-0.4-3.2 6.4 0 0.6-0.4 0.9-1.7 0-1.5-0.2-0.3 3.8-1.3 3.6-0.2 2.5 1.1 2.4 1.6 1.4 1.7 1.4 2.1 0.7 2 0.9 1.7-0.6 2.3-0.6 1.7-2 7.9-1.5 1.6-2.3 1.7-2.4 3-2.5 4.3-1.4 3.7-1.7 7.4 0.2 3.6-1.2 8-1.5 3.7 0.4 3.8 0.7 3.3 1.4 3.1 2 2.6 1.9 1.9 4 1.8 0.2 1.9-2.6 8.5 0.3 2.9 1.2 3.3 2.3 4.8 0.1 2.8 0.9 3 3.5 1.8 2.8 0.2 4.7-0.4 12.3-5.8 1.7 0.9 2 5.1 4.5 6.4 1.8 3.5 2.4 1 2.7 0.5 3.1-1.5 7.7-11.3 3.2-1.7 2.6 1.5 6.4 7.2 1.3 4.3-3 2.8-4.9 12.9-4.4 9-1.1 4.5-0.4 3.2 0 2.8 0.2 1.8 0.4 2.1 0.3 3.5 1.2 1.4 2.1 1.9 0.9 2.2 0.3 2.6-0.3 2.8 0.1 3 0.6 3.3 1.8 2.6 1.9 3.5 0.8 3.4-0.1 2.6 0.8 2.8 2.3 5.7-0.2 6.6-0.5 2.9-1 2.6-0.5 3.1 0.9 2.6 0.6 2.7-0.1 2.7 0.4 2.2 2.9 4 0.1 2-0.9 2.7-1.2 2.2-0.2 5.5z",
     NZOTA: "M265.4 1194.7l0.2-5.5 1.2-2.2 0.9-2.7-0.1-2-2.9-4-0.4-2.2 0.1-2.7-0.6-2.7-0.9-2.6 0.5-3.1 1-2.6 0.5-2.9 0.2-6.6-2.3-5.7-0.8-2.8 0.1-2.6-0.8-3.4-1.9-3.5-1.8-2.6-0.6-3.3-0.1-3 0.3-2.8-0.3-2.6-0.9-2.2-2.1-1.9-1.2-1.4-0.3-3.5-0.4-2.1-0.2-1.8 0-2.8 0.4-3.2 1.1-4.5 4.4-9 4.9-12.9 3-2.8-1.3-4.3-6.4-7.2-2.6-1.5-3.2 1.7-7.7 11.3-3.1 1.5-2.7-0.5-2.4-1-1.8-3.5-4.5-6.4-2-5.1-1.7-0.9-12.3 5.8-4.7 0.4-2.8-0.2-3.5-1.8-0.9-3-0.1-2.8-2.3-4.8-1.2-3.3-0.3-2.9 2.6-8.5-0.2-1.9-4-1.8-1.9-1.9-2-2.6-1.4-3.1-0.7-3.3-0.4-3.8 1.5-3.7 1.2-8-0.2-3.6 1.7-7.4 1.4-3.7 2.5-4.3 2.4-3 2.3-1.7 1.5-1.6 8.9-0.9 13.8-6.7 4.6-0.7 2-1.2 2.6-2.8 1.6-2.5 1.7-4.7 0.5-2 0.7-2.1 1.3-1.6 1.7-1.6 2.4-1.5 2.5-3 0.8-1.8 0.7-1 3.4-2.7 3.2-1.5 3-0.5 3.5 0.2 4.4-0.7 2.6-1.4 2.1-0.1 1.2 1 1.8 0.9 2.3 0.7 2.8-1.5 2.4-1.8 2.9-1.5 2.6-1.8 2.1-1.2 1.4-1.9 1-2 1.2-1.7 1.8-0.3 1.3 0 2 1.2 0.6 5.5-0.8 2.4-1.8 3-1.2 2.7-1.6 1.9-1.7 2.7-0.8 1.9-1.5 2.3-0.2 2.2 0 17.9 0.2 2.4 0.4 1.5 2.2 0.9 2 1.8 1.1 2.6 1.1 6.5 1.4 1.9 1.6 0.9 2-0.3 1.9 2.7 4 4.2 5.2-0.7 2.3 1.1 2.1 2.8 1.7 3.5 2.2 7.2 2.5 5.9 2.1 3.4 1.5 1.9 2.2 1.2 5 0.4 6.2-1.4 2.7 0.2 1.3 0.9 0.9 2-0.2 2.1 0.4 2.8 0.7 2.6 1.6 2.6 1.4 1.3 6.9-3.9 11-10.2 2.5-1.3 2.8-0.7 2.8-0.1 5.9-1.6 12.6 3.5 7.4 3 3.4 0.6-0.7 1.5-0.3 1.6-4.8 9-7.8 8.1-3.8 8.3-1.7 7.2-1 2.1-0.8 2.5 1 1.3 1.2 1.1-0.1 2.3-2.7 3.2-0.6 1.3 0 1.1 0.2 1.1 0.2 1.3-1 1.8-1.9 1.4-1.5 1.6 0.5 2.4-0.8 1.2-0.9 0.6-0.9-0.1-1.2-0.9 0 1.1 0.3 1 0.6 2-1.2 1.1-0.9 0.4-2.5-0.1-1.4 0.5 0 1 1 1 1.7 0.3-1.7 3.6-0.6 0.6-0.8 0.2-0.8 0.6-1.5 1.2-0.6 0.2-0.4-0.1-0.4 0-0.1 0.9 0 1 0.1 0.5 0.3 0.2 0.6 0.1 1.1 0.4 0.9 0.6 0.9 0.1 1-1.1 1.3 1.1 1.8 1 1.5 1 0 1.4-1.3 0.9-3.4 0.7-1.4 0.8-1.4 2.2-0.5 0.6-0.6 0.3-0.8 0.1-0.7 0.4-0.9 2.6-2.6 1.7-0.7 1.8 1.3-0.7 2.6-0.7 2.1-1.9 3.2-1.2 1-1 1-2.3 0.9-1.2 1-0.7 0.9-0.2 0.8-0.5 0.7-1.4 0.7 1.3 0.3 1.6-0.2 5.5-0.7 1.3-1 0.6-1.5 0.1-1.4-0.1-0.3 0.1-0.8 0.6-0.3 0.7 0 0.7-0.2 0.5-14.6 1.6-6 2-5.3 3.9-4 6-1.2 2.4-0.2 1.1-0.2 3.1-0.7 1.9-0.1 0.9-0.5 2.2-1.3 1.9-1.6 1.6-1.5 1-3.7 1.5-1.8 1.1-1.5 1.9-1.2 1.9-1.3 1.5-9.8 7.1-2.5 3.4-0.9 5.3 0.2 2.8-0.4 1-2 0.8-1.6 1.4-0.6 0.3-1.2-0.2-2.4-0.9-1.2-0.3-1.2 0.2-2 0.9-1.2 0.3 1.2 0.5 5.6 0.3-1.4 3.5-2.2 1.6-2.5 1-2.4 2-1-0.1-1.8-0.8-2-0.5-1.4 0.7-0.9 0.9-3.8 2.2 0.4 0.5 0.7 1.2 0.4 0.5-1.9 0.6-2.4-0.7-2.1-0.2-1.3 2.4-1.5-1.2-0.5-0.2-2.4-0.5-1.2 0.2-1 0.6-1.4 1.6-0.9 0.6-0.8 0.3-2.5 0.3-0.9-0.1-1-1 0.3-2-0.2-1.2-0.1 0z"  } as Record<string, string>,
   names: {
-    NZWKO: "Waikato",
-    NZCAN: "Canterbury",
+    NZWKO: "NZWKO",
+    NZCAN: "NZCAN",
     NZWTC: "Wellington",
-    NZGIS: "Gisborne",
-    NZHKB: "Hawke's Bay",
-    NZNTL: "Nelson",
-    NZTAS: "Tasman",
-    NZTKI: "Taranaki",
-    NZAUK: "Auckland",
-    NZWGN: "Manawatu‑Wanganui",
-    NZSTL: "Southland",
-    NZOTA: "Otago"
+    NZMWT: "NZMWT",
+    NZGIS: "NZGIS",
+    NZHKB: "NZHKB",
+    NZNSN: "NZNSN",
+    NZTAS: "NZTAS",
+    NZMBH: "NZMBH",
+    NZNTL: "NZNTL",
+    NZBOP: "NZBOP",
+    NZTKI: "NZTKI",
+    NZAUK: "NZAUK",
+    NZWGN: "NZWGN",
+    NZSTL: "NZSTL",
+    NZOTA: "NZOTA",
   }
 }
 
-/* NZMap Component with place names (labels) added */
 const NZMap: React.FC = () => {
-  const svgRef = useRef<SVGSVGElement | null>(null)
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
   useEffect(() => {
-    const { paths, names, initial_view } = simplemaps_countrymap_mapinfo
-    const width = initial_view.x2
-    const height = initial_view.y2
+    const { paths, names, initial_view } = simplemaps_countrymap_mapinfo;
+    const width = initial_view.x2;
+    const height = initial_view.y2;
+
+    // Get the current livestock data and log it
+    const currentData = filterData("2019", "Wellington");
+    console.log("Current Data Loaded:", currentData);
+
+    const regionData: { [region: string]: number } = {};
+
+    if (currentData) {
+      // Aggregate livestock numbers by region.
+      // (Assumes that the keys in currentData.data match the region codes in paths.)
+      Object.keys(paths).forEach((region) => {
+        const value = currentData.data[region] || 0;
+        regionData[region] = value as number;
+      });
+      console.log("Aggregated Region Data:", regionData);
+    } else {
+      // If no data is available, set all regions to zero
+      Object.keys(paths).forEach((region) => {
+        regionData[region] = 0;
+      });
+      console.log("No current data found. Defaulting region data to zero:", regionData);
+    }
+
+    // Define a color scale based on livestock numbers
+    const maxCount = d3.max(Object.values(regionData)) || 1;
+    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxCount]);
 
     const svg = d3.select(svgRef.current!)
-      .attr("viewBox", `0 0 ${width} ${height}`)
-      .style("width", "100%")
-      .style("height", "auto")
+      .attr('viewBox', `0 0 ${width} ${height}`)
+      .style('width', '100%')
+      .style('height', 'auto');
 
-    // Clear any previous elements
-    svg.selectAll("*").remove()
+    // Clear previous elements
+    svg.selectAll('*').remove();
 
-    // Group for the map elements
-    const g = svg.append("g")
+    // Create group for the map elements
+    const g = svg.append('g');
 
-    // Draw each district path and assign the corresponding name.
-    Object.keys(paths).forEach((key) => {
-      const pathKey = key as keyof typeof paths
-      g.append("path")
-        .attr("d", paths[pathKey])
-        .attr("fill", "#ccc")
-        .attr("stroke", "#333")
-        .attr("data-name", names[key as keyof typeof names])
-        .on("mouseover", function () {
-          d3.select(this).attr("fill", "#aaa")
-        })
-        .on("mouseout", function () {
-          d3.select(this).attr("fill", "#ccc")
-        })
-        .on("click", function () {
-          const regionName = d3.select(this).attr("data-name")
-          alert(`Clicked on ${regionName}`)
-        })
-    })
-
-    // For each path, calculate its bounding box and add a text label at its center.
-    g.selectAll("path").each(function () {
-      const bbox = (this as SVGPathElement).getBBox()
-      const cx = bbox.x + bbox.width / 2
-      const cy = bbox.y + bbox.height / 2
-      const placeName = d3.select(this).attr("data-name")
-      if (placeName) {
-        g.append("text")
-          .attr("x", cx)
-          .attr("y", cy)
-          .attr("text-anchor", "middle")
-          .attr("alignment-baseline", "middle")
-          .style("font-size", "10px")
-          .style("pointer-events", "none")
-          .text(placeName)
-      }
-    })
-
-    // Enable zoom and pan behavior.
+    // Define zoom behavior
     const zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([1, 8])
-      .on("zoom", (event) => {
-        g.attr("transform", event.transform)
-      })
-    svg.call(zoom)
-  }, [])
+      .on('zoom', (event) => {
+        g.attr('transform', event.transform);
+      });
 
-  return <svg ref={svgRef}></svg>
-}
+    // Draw each region and assign heat map colors
+    Object.keys(paths).forEach((key) => {
+      const pathKey = key as keyof typeof paths;
+      const livestockCount = regionData[key] || 0;
+
+      g.append('path')
+        .attr('d', paths[pathKey])
+        .attr('fill', colorScale(livestockCount))
+        .attr('stroke', '#333')
+        .attr('data-name', names[key as keyof typeof names])
+        .on('mouseover', function () {
+          d3.select(this).attr('stroke', '#000').attr('stroke-width', 2);
+        })
+        .on('mouseout', function () {
+          d3.select(this).attr('stroke', '#333').attr('stroke-width', 1);
+        })
+        .on('click', function (event) {
+          event.stopPropagation();
+          const bbox = (this as SVGPathElement).getBBox();
+          const x0 = bbox.x, y0 = bbox.y, x1 = bbox.x + bbox.width, y1 = bbox.y + bbox.height;
+          const scale = Math.min(8, 0.9 / Math.max((x1 - x0) / width, (y1 - y0) / height));
+          const translateX = width / 2 - scale * ((x0 + x1) / 2);
+          const translateY = height / 2 - scale * ((y0 + y1) / 2);
+          const transform = d3.zoomIdentity.translate(translateX, translateY).scale(scale);
+
+          svg.transition().duration(750)
+            .call(zoom.transform, transform, d3.pointer(event, svg.node()));
+        });
+    });
+
+    // Add a legend (optional)
+    const legendWidth = 300;
+    const legendHeight = 10;
+    const legend = svg.append('g').attr('transform', `translate(${width - legendWidth - 20}, 20)`);
+
+    const legendScale = d3.scaleLinear().domain([0, maxCount]).range([0, legendWidth]);
+    const legendAxis = d3.axisBottom(legendScale).ticks(5);
+
+    const gradient = svg.append('defs')
+      .append('linearGradient')
+      .attr('id', 'legend-gradient')
+      .attr('x1', '0%')
+      .attr('x2', '100%')
+      .attr('y1', '0%')
+      .attr('y2', '0%');
+
+    gradient.append('stop')
+      .attr('offset', '0%')
+      .attr('stop-color', d3.interpolateYlOrRd(0));
+    gradient.append('stop')
+      .attr('offset', '100%')
+      .attr('stop-color', d3.interpolateYlOrRd(1));
+
+    legend.append('rect')
+      .attr('width', legendWidth)
+      .attr('height', legendHeight)
+      .style('fill', 'url(#legend-gradient)');
+
+    legend.append('g')
+      .attr('transform', `translate(0, ${legendHeight})`)
+      .call(legendAxis);
+
+    // Enable zoom behavior on the SVG
+    svg.call(zoom);
+
+    // Reset zoom on background click
+    svg.on('click', (event) => {
+      svg.transition().duration(750)
+        .call(zoom.transform, d3.zoomIdentity, d3.pointer(event, svg.node()));
+    });
+  }, []);
+
+  return <svg ref={svgRef}></svg>;
+};
 
 const Section1: React.FC = () => {
   return (
     <div className="h-full w-full">
       <NZMap />
     </div>
-  )
-}
+  );
+};
 
-export default Section1
+export default Section1;
