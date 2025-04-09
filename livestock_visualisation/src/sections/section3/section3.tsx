@@ -13,170 +13,305 @@ interface Section3Props {
 }
 
 const Section3: React.FC<Section3Props> = ({ year, location }) => {
-  const [data, setData] = useState<FilteredData | null>(null)
+  // Toggle between main chart and cattle breakdown view
+  const [showCattleBreakdown, setShowCattleBreakdown] = useState(false)
+
+  // Initialise the selected animals with the main chart options by default
+  const availableAnimalsMain = ['Sheep', 'Total cattle', 'Deer']
+  const availableAnimalsDetail = ['Beef cattle', 'Dairy cattle']
+  const [selectedAnimals, setSelectedAnimals] = useState<string[]>(availableAnimalsMain)
+
+  // Store filtered data from database
+  const [filteredData, setFilteredData] = useState<FilteredData | null>(null)
+
+  // State for the hovered slice (to display at the bottom)
+  const [hoveredSlice, setHoveredSlice] = useState<{ animal: string; count: number } | null>(null)
+
   const chartRef = useRef<SVGSVGElement | null>(null)
 
-  // Load the current filtered data whenever year or location changes
+  // When year or location changes, load data
   useEffect(() => {
     const currentData = getCurrentData()
-    setData(currentData)
+    setFilteredData(currentData)
+    console.log('[Section3] Loaded data for', { year, location, currentData })
   }, [year, location])
 
-  // Render the donut chart using D3
+  // When switching views, update the selected animal list
   useEffect(() => {
-    // If there's no data or no chart container, do nothing
-    if (!data || !chartRef.current) return
+    if (showCattleBreakdown) {
+      setSelectedAnimals(availableAnimalsDetail)
+    } else {
+      setSelectedAnimals(availableAnimalsMain)
+    }
+  }, [showCattleBreakdown])
 
-    // Clear any previous chart
-    d3.select(chartRef.current).selectAll('*').remove()
+  // Render the donut chart
+  useEffect(() => {
+    try {
+      if (!filteredData || !chartRef.current) {
+        console.log('[Section3] No data or chartRef available; skipping rendering.')
+        return
+      }
 
-    // Convert the data object into an array for D3
-    const chartData: DonutData[] = Object.entries(data.data)
-      .filter(([_, count]) => count !== null) // filter out null counts
-      .map(([animal, count]) => ({
-        animal,
-        // Safely cast null to 0 if needed
-        count: typeof count === 'number' ? count : 0
-      }))
+      // Clear any previous content from the svg
+      d3.select(chartRef.current).selectAll('*').remove()
 
-    // Log to check if you’re actually getting data
-    console.log('Section3 chartData:', chartData)
+      // Extract numeric values; default to 0 if missing
+      const sheep = filteredData.data['Sheep'] ?? 0
+      const deer = filteredData.data['Deer'] ?? 0
+      const beef = filteredData.data['Beef cattle'] ?? 0
+      const dairy = filteredData.data['Dairy cattle'] ?? 0
+      const totalCattle = beef + dairy
 
-    // If chartData is empty, there's nothing to show
-    if (chartData.length === 0) return
+      // Build the two data sets
+      const mainChartData: DonutData[] = [
+        { animal: 'Sheep', count: Number(sheep) },
+        { animal: 'Total cattle', count: Number(totalCattle) },
+        { animal: 'Deer', count: Number(deer) },
+      ]
+      const detailChartData: DonutData[] = [
+        { animal: 'Beef cattle', count: Number(beef) },
+        { animal: 'Dairy cattle', count: Number(dairy) },
+      ]
 
-    // Dimensions based on the container size
-    const width = chartRef.current.clientWidth
-    const height = chartRef.current.clientHeight
-    const radius = Math.min(width, height) / 2
+      // Choose which dataset to use based on the view
+      const rawData = showCattleBreakdown ? detailChartData : mainChartData
+      const chartData = rawData.filter(d => selectedAnimals.includes(d.animal))
 
-    // Append a group element to center the chart
-    const svg = d3.select(chartRef.current)
-      .append('g')
-      .attr('transform', `translate(${width / 2}, ${height / 2})`)
-
-    // Color scale for different animals
-    const color = d3.scaleOrdinal<string>()
-      .domain(chartData.map(d => d.animal))
-      .range(d3.schemeCategory10)
-
-    // Pie layout generator
-    const pie = d3.pie<DonutData>()
-      .value(d => d.count)
-      .sort(null)
-
-    // Arc generators
-    const arc = d3.arc<d3.PieArcDatum<DonutData>>()
-      .innerRadius(radius * 0.5) // size of the donut hole
-      .outerRadius(radius * 0.8)
-
-    const outerArc = d3.arc<d3.PieArcDatum<DonutData>>()
-      .innerRadius(radius * 0.9)
-      .outerRadius(radius * 0.9)
-
-    const arcs = pie(chartData)
-
-    // 3. Draw donut slices
-    svg.selectAll<SVGPathElement, d3.PieArcDatum<DonutData>>('path')
-      .data(arcs)
-      .join('path')
-      .attr('d', arc)
-      .attr('fill', d => color(d.data.animal) || '#ccc')
-      .attr('stroke', 'white')
-      .attr('stroke-width', 2)
-      .on('mouseover', function (event, d) {
-        // Slightly expand the slice on hover
-        d3.select<SVGPathElement, d3.PieArcDatum<DonutData>>(this)
-          .transition()
-          .duration(200)
-          .attr('d', d3.arc<d3.PieArcDatum<DonutData>>()
-            .innerRadius(radius * 0.5)
-            .outerRadius(radius * 0.85)
-          )
-
-        // Show tooltip text in the center
+      // If no data remains after filtering, show fallback text
+      if (chartData.length === 0) {
+        console.log('[Section3] Chart data is empty after filtering.')
+        const svg = d3.select(chartRef.current)
+        const w = chartRef.current.clientWidth
+        const h = chartRef.current.clientHeight
         svg.append('text')
-          .attr('class', 'tooltip')
+          .attr('x', w / 2)
+          .attr('y', h / 2)
           .attr('text-anchor', 'middle')
-          .attr('dy', '-0.5em')
-          .style('font-size', '12px')
+          .style('font-size', '14px')
           .style('font-weight', 'bold')
-          .text(`${d.data.animal}: ${d3.format(',')(d.data.count)}`)
-      })
-      .on('mouseout', function () {
-        // Revert slice size and remove tooltip
-        d3.select<SVGPathElement, d3.PieArcDatum<DonutData>>(this)
-          .transition()
-          .duration(200)
-          .attr('d', arc)
+          .text('No data to display.')
+        return
+      }
 
-        svg.selectAll('.tooltip').remove()
-      })
+      console.log('[Section3] ChartData:', chartData)
 
-    // 4. Add labels outside slices
-    svg.selectAll('allLabels')
-      .data(arcs)
-      .join('text')
-      .text(d => d.data.animal)
-      .attr('transform', d => {
-        const pos = outerArc.centroid(d)
-        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2
-        pos[0] = radius * 0.95 * (midAngle < Math.PI ? 1 : -1)
-        return `translate(${pos})`
-      })
-      .style('text-anchor', d => {
-        const midAngle = d.startAngle + (d.endAngle - d.startAngle) / 2
-        return midAngle < Math.PI ? 'start' : 'end'
-      })
-      .style('font-size', '12px')
+      // Dimensions and radius
+      const w = chartRef.current.clientWidth
+      const h = chartRef.current.clientHeight
+      const radius = Math.min(w, h) / 2
 
-    // 5. Chart title
-    svg.append('text')
-      .attr('x', 0)
-      .attr('y', -radius - 20)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '14px')
-      .style('font-weight', 'bold')
-      .text(`Livestock Distribution in ${location} (${year})`)
+      // Create a centered group
+      const svg = d3.select(chartRef.current)
+        .append('g')
+        .attr('transform', `translate(${w / 2}, ${h / 2})`)
 
-  }, [data, chartRef, year, location])
+      // Add a drop-shadow filter
+      const defs = svg.append('defs')
+      const filter = defs.append('filter')
+        .attr('id', 'drop-shadow')
+        .attr('height', '130%')
+      filter.append('feGaussianBlur')
+        .attr('in', 'SourceAlpha')
+        .attr('stdDeviation', 2)
+        .attr('result', 'blur')
+      filter.append('feOffset')
+        .attr('in', 'blur')
+        .attr('dx', 2)
+        .attr('dy', 2)
+        .attr('result', 'offsetBlur')
+      const feMerge = filter.append('feMerge')
+      feMerge.append('feMergeNode').attr('in', 'offsetBlur')
+      feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
-  // 6. Render fallback if no data
-  if (!data) {
+      // Use fixed colors (red, green, blue)
+      const colorList = ['red', 'green', 'blue']
+      const colorScale = d3.scaleOrdinal<string>()
+        .domain(chartData.map(d => d.animal))
+        .range(colorList.slice(0, chartData.length))
+
+      // Create a pie layout
+      const pie = d3.pie<DonutData>()
+        .value(d => d.count)
+        .sort(null)
+      const arcs = pie(chartData)
+
+      // Arc generators
+      const arcGen = d3.arc<d3.PieArcDatum<DonutData>>()
+        .innerRadius(radius * 0.5)
+        .outerRadius(radius * 0.8)
+      const arcHoverGen = d3.arc<d3.PieArcDatum<DonutData>>()
+        .innerRadius(radius * 0.5)
+        .outerRadius(radius * 0.85)
+
+      // Animation tween for arc transition
+      const arcTween = (d: d3.PieArcDatum<DonutData>) => {
+        const i = d3.interpolate({ startAngle: 0, endAngle: 0 }, d)
+        return (t: number) => arcGen(i(t)) as string
+      }
+
+      // Draw slices with transition
+      svg.selectAll('path.slice')
+        .data(arcs)
+        .enter()
+        .append('path')
+        .attr('class', 'slice')
+        .attr('fill', d => colorScale(d.data.animal) || '#ccc')
+        .attr('stroke', '#fff')
+        .attr('stroke-width', 2)
+        .attr('d', arcGen)
+        .transition()
+        .duration(1000)
+        .attrTween('d', d => arcTween(d))
+
+      // Add hover interactions
+      svg.selectAll('path.slice')
+        .on('mouseover', (event, d) => {
+          d3.select(event.currentTarget)
+            .transition()
+            .duration(200)
+            .ease(d3.easeBounce)
+            .attr('d', arcHoverGen)
+            .style('filter', 'url(#drop-shadow)')
+          const total = d3.sum(chartData, cd => cd.count)
+          const pct = ((d.data.count / total) * 100).toFixed(1)
+          setHoveredSlice({ animal: d.data.animal, count: d.data.count })
+        })
+        .on('mouseout', (event) => {
+          d3.select(event.currentTarget)
+            .transition()
+            .duration(200)
+            .attr('d', arcGen)
+            .style('filter', 'none')
+          setHoveredSlice(null)
+        })
+
+      // Add fixed title "Donut Chart"
+      svg.append('text')
+        .attr('x', 0)
+        .attr('y', -radius - 20)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '14px')
+        .style('font-weight', 'bold')
+        .text('Donut Chart')
+    } catch (err) {
+      console.error('[Section3] Error during rendering:', err)
+    }
+  }, [filteredData, showCattleBreakdown, selectedAnimals, year, location])
+
+  // If no filtered data, show fallback message
+  if (!filteredData) {
     return (
       <div className="h-full w-full flex items-center justify-center">
-        <p className="text-gray-500">
-          No data available for {year}, {location}
-        </p>
+        <p className="text-gray-500">No data available for {year}, {location}</p>
       </div>
     )
   }
 
-  // 7. Main render with chart and optional data table
+  // Prepare legend data
+  const sheep = filteredData.data['Sheep'] ?? 0
+  const deer = filteredData.data['Deer'] ?? 0
+  const beef = filteredData.data['Beef cattle'] ?? 0
+  const dairy = filteredData.data['Dairy cattle'] ?? 0
+  const totalCattle = beef + dairy
+
+  const mainTableData = [
+    { animal: 'Sheep', count: Number(sheep) },
+    { animal: 'Total cattle', count: Number(totalCattle) },
+    { animal: 'Deer', count: Number(deer) },
+  ]
+  const detailTableData = [
+    { animal: 'Beef cattle', count: Number(beef) },
+    { animal: 'Dairy cattle', count: Number(dairy) },
+  ]
+  const rawRows = showCattleBreakdown ? detailTableData : mainTableData
+  const tableRows = rawRows.filter(d => selectedAnimals.includes(d.animal))
+  const legendData = tableRows.map(item => item.animal)
+  const colorList = ['red', 'green', 'blue']
+  const legendColorScale = d3.scaleOrdinal<string>()
+    .domain(legendData)
+    .range(colorList.slice(0, legendData.length))
+
+  // Define available animals for checkboxes
+  const availableAnimals = showCattleBreakdown ? availableAnimalsDetail : availableAnimalsMain
+  const handleCheckboxChange = (animal: string) => {
+    setSelectedAnimals(prev => {
+      if (prev.includes(animal)) {
+        const updated = prev.filter(a => a !== animal)
+        return updated.length > 0 ? updated : prev
+      } else {
+        return [...prev, animal]
+      }
+    })
+  }
+
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex-grow">
+    <div className="h-full w-full flex flex-col p-2 relative">
+      {/* Toggle Button */}
+      <div className="mb-2">
+        {!showCattleBreakdown ? (
+          <button
+            onClick={() => setShowCattleBreakdown(true)}
+            className="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded"
+          >
+            View Cattle Breakdown
+          </button>
+        ) : (
+          <button
+            onClick={() => setShowCattleBreakdown(false)}
+            className="bg-gray-700 hover:bg-gray-800 text-white px-3 py-1 rounded"
+          >
+            Back to Main Chart
+          </button>
+        )}
+      </div>
+
+      {/* Vertical Checklist below the button */}
+      <div className="mb-2">
+        <p className="font-bold mb-1">Select animals to display:</p>
+        <div className="flex flex-col space-y-1">
+          {availableAnimals.map(animal => (
+            <label key={animal} className="text-sm">
+              <input
+                type="checkbox"
+                checked={selectedAnimals.includes(animal)}
+                onChange={() => handleCheckboxChange(animal)}
+                className="mr-1"
+              />
+              {animal}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend in top-right */}
+      <div className="absolute top-0 right-0 m-2 bg-white p-2 rounded shadow text-sm">
+          <p className="font-bold mb-1">Legend:</p>
+          {legendData.map(animal => (
+            <div key={animal} className="flex items-center mb-1">
+              <div
+                className="w-3 h-3 mr-2"
+                style={{ backgroundColor: legendColorScale(animal) }}
+              ></div>
+              <span>{animal}</span>
+            </div>
+          ))}
+        </div>
+
+      {/* Donut Chart Container */}
+      <div className="flex-grow relative" style={{ minHeight: '300px' }}>
         <svg ref={chartRef} width="100%" height="100%"></svg>
       </div>
-      <div className="p-2 overflow-auto max-h-[100px]">
-        <table className="min-w-full border-collapse text-xs">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">Animal</th>
-              <th className="border px-2 py-1">Count</th>
-            </tr>
-          </thead>
-          <tbody>
-            {Object.entries(data.data).map(([animal, count]) => (
-              <tr key={animal}>
-                <td className="border px-2 py-1">{animal}</td>
-                <td className="border px-2 py-1 text-right">
-                  {count === null ? 'N/A' : count.toLocaleString()}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+
+      {/* Hover display area at the bottom */}
+      <div className="mt-2 text-center">
+        {hoveredSlice ? (
+          <p>
+            <span className="font-bold">{hoveredSlice.animal}</span> - {hoveredSlice.count.toLocaleString()}
+          </p>
+        ) : (
+          <p className="text-gray-500">Hover over a slice to see details</p>
+        )}
       </div>
     </div>
   )
