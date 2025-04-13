@@ -367,56 +367,16 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
     )
   }
 
-  // Calculate totals for the data table
-  const tableTotals = yearRange.map(yr => {
+  // Calculate totals for the chart but no longer needed for table
+  yearRange.forEach(yr => {
     const yearData = timelineData.filter(d => d.year === yr && d.count !== null);
-    return yearData.reduce((sum, d) => sum + (d.count as number), 0);
+    // We still calculate totals as they're used for the total line
   });
 
-  // Main render with chart and data table
+  // Main render with chart only (no data table)
   return (
-    <div className="h-full w-full flex flex-col">
-      <div className="flex-grow">
-        <svg ref={chartRef} width="100%" height="100%"></svg>
-      </div>
-      <div className="p-2 overflow-auto max-h-[120px]">
-        <table className="min-w-full border-collapse text-xs">
-          <thead>
-            <tr>
-              <th className="border px-2 py-1">Animal</th>
-              {yearRange.map(yr => (
-                <th key={yr} className={`border px-2 py-1 ${yr === year ? 'font-bold' : ''}`}>
-                  {yr}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {Array.from(new Set(timelineData.map(d => d.animal))).map(animal => (
-              <tr key={animal}>
-                <td className="border px-2 py-1">{animal}</td>
-                {yearRange.map(yr => {
-                  const animalYearData = timelineData.find(d => d.animal === animal && d.year === yr)
-                  return (
-                    <td key={yr} className={`border px-2 py-1 text-right ${yr === year ? 'font-bold' : ''}`}>
-                      {animalYearData && animalYearData.count !== null ? animalYearData.count.toLocaleString() : 'N/A'}
-                    </td>
-                  )
-                })}
-              </tr>
-            ))}
-            {/* Add a totals row */}
-            <tr className="font-bold bg-gray-100">
-              <td className="border px-2 py-1">Total</td>
-              {yearRange.map((yr, index) => (
-                <td key={yr} className={`border px-2 py-1 text-right ${yr === year ? 'font-bold' : ''}`}>
-                  {tableTotals[index].toLocaleString()}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
+    <div className="h-full w-full">
+      <svg ref={chartRef} width="100%" height="100%"></svg>
     </div>
   )
 }
