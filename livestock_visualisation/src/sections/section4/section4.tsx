@@ -131,6 +131,37 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
     svg.append('g')
       .call(d3.axisLeft(y).ticks(5).tickFormat(d => d3.format(','+(maxCount > 1000 ? '.2s' : ''))(+d)))
       .style('font-size', '12px')
+      
+    // Add grid lines
+    // Horizontal grid lines (based on y-axis ticks)
+    svg.append('g')
+      .attr('class', 'grid-lines')
+      .selectAll('line.horizontal-grid')
+      .data(y.ticks(5))
+      .join('line')
+      .attr('class', 'horizontal-grid')
+      .attr('x1', 0)
+      .attr('x2', width)
+      .attr('y1', d => y(d))
+      .attr('y2', d => y(d))
+      .attr('stroke', '#e0e0e0')
+      .attr('stroke-width', 1)
+      .attr('stroke-dasharray', '3,3')
+      
+    // Vertical grid lines (based on x-axis ticks)
+    svg.append('g')
+      .attr('class', 'grid-lines')
+      .selectAll('line.vertical-grid')
+      .data(yearRange)
+      .join('line')
+      .attr('class', 'vertical-grid')
+      .attr('x1', d => x(d) || 0)
+      .attr('x2', d => x(d) || 0)
+      .attr('y1', 0)
+      .attr('y2', height)
+      .attr('stroke', '#e0e0e0')
+      .attr('stroke-width', 1)
+      .attr('stroke-dasharray', '3,3')
 
     // Add y-axis label
     svg.append('text')
@@ -165,9 +196,9 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .attr('y1', 0)
       .attr('y2', height)
       .attr('stroke', '#333')
-      .attr('stroke-width', 1)
-      .attr('stroke-dasharray', '3,3')
-      .attr('opacity', 0.7)
+      .attr('stroke-width', 1.5)
+      .attr('stroke-dasharray', '5,5')
+      .attr('opacity', 0.9)
 
     // Add a total line if we have enough animals
     if (animals.length > 1) {
