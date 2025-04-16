@@ -9,7 +9,7 @@ import { getAvailableYears, getAvailableLocations } from './database/database'
 
 function App() {
   const [year, setYear] = useState('2019')
-  const [location, setLocation] = useState('Wellington')
+  const [location, setLocation] = useState('New Zealand')
   const [dataLoaded, setDataLoaded] = useState(false)
   const [availableYears, setAvailableYears] = useState<string[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
@@ -59,7 +59,7 @@ function App() {
           
           {/* Section 1 - Main visualization */}
           <div className="bg-white rounded-lg shadow h-[300px] md:flex-grow">
-            <Section1 year={year} location={location} />
+            <Section1 year={year} location={location} setLocation={setLocation} />
           </div>
           
           {/* Location selector */}
