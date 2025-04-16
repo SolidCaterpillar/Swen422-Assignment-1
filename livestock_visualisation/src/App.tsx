@@ -88,7 +88,7 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
             {/* Section 3 */}
             <div className="bg-white rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-gray-100 text-center">Title</div>
+              <div className="p-2 bg-gray-100 text-center">Donut Chart</div>
               <Section3 year={year} location={location} />
             </div>
             
