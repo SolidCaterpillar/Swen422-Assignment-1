@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Section1 from './sections/section1/section1'
-import Section2 from './sections/section2/section2'
+import Section2 from './sections/section2/section2.1'
 import Section3 from './sections/section3/section3'
 import Section4 from './sections/section4/section4'
 import { loadData, updateData } from './database/dataloader'
@@ -80,7 +80,7 @@ function App() {
         <div className="md:col-span-7 flex flex-col gap-4">
           {/* Section 2 - Top visualization */}
           <div className="bg-white rounded-lg shadow h-[300px] md:h-1/2">
-            <div className="p-2 bg-gray-100 text-center">Title</div>
+            <div className="p-2 bg-gray-100 text-center">Livestock Trends in {location}</div>
             <Section2 year={year} location={location} />
           </div>
           
@@ -88,7 +88,7 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
             {/* Section 3 */}
             <div className="bg-white rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-gray-100 text-center">Donut Chart</div>
+              <div className="p-2 bg-gray-100 text-center">Distribution of Livestock at {location} in {year} </div>
               <Section3 year={year} location={location} />
             </div>
             

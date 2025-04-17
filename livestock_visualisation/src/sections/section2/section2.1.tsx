@@ -171,7 +171,6 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
 
   return (
     <div className="h-full w-full flex flex-col items-center justify-center">
-      <h3 className="text-lg font-semibold mb-4">Livestock Trends in {location}</h3>
       <div className="w-full h-[90%]">
         <svg 
           ref={chartRef} 
