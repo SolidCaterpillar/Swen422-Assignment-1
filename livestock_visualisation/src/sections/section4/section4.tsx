@@ -180,14 +180,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .style('font-size', '14px')
       .text('Year')
 
-    // Add chart title
-    svg.append('text')
-      .attr('x', width / 2)
-      .attr('y', -margin.top / 2)
-      .attr('text-anchor', 'middle')
-      .style('font-size', '16px')
-      .style('font-weight', 'bold')
-      .text(`Livestock Distribution in ${location} (${year2Before}-${year2After})`)
+    // Removed title section
 
     // Highlight the selected year with a vertical line
     svg.append('line')
