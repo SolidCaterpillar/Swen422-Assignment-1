@@ -58,7 +58,7 @@ function App() {
           </div>
           
           {/* Section 1 - Main visualization */}
-          <div className="bg-white rounded-lg shadow h-[300px] md:flex-grow">
+          <div className="bg-white rounded-lg shadow h-[300px] md:flex-grow overflow-hidden">
             <Section1 year={year} location={location} setLocation={setLocation} />
           </div>
           
