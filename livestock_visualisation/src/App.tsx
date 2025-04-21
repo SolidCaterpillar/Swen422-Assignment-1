@@ -94,7 +94,7 @@ function App() {
             
             {/* Section 4 */}
             <div className="bg-white rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-gray-100 text-center">Title</div>
+              <div className="p-2 bg-gray-100 text-center">5 Years Trends in {location} </div>
               <Section4 year={year} location={location} />
             </div>
           </div>
