@@ -246,7 +246,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   }
 
   return (
-    <div className="h-full w-full flex flex-col p-2 relative">
+    <div className="h-[90%] w-full flex flex-col p-2 relative">
       {/* Toggle Button */}
       <div className="mb-2">
         {!showCattleBreakdown ? (

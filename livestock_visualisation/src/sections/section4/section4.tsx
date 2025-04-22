@@ -79,7 +79,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
     const animals = Array.from(new Set(timelineData.map(d => d.animal)))
 
     // Setup dimensions and margins
-    const margin = { top: 50, right: 150, bottom: 60, left: 80 }
+    const margin = { top: 15, right: 150, bottom: 60, left: 80 }
     const width = chartRef.current.clientWidth - margin.left - margin.right
     const height = chartRef.current.clientHeight - margin.top - margin.bottom
 
@@ -406,7 +406,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
   // Main render with chart only (no data table)
   return (
     <div className="h-full w-full">
-      <svg ref={chartRef} width="100%" height="100%"></svg>
+      <svg ref={chartRef} width="100%" height="92%"></svg>
     </div>
   )
 }
