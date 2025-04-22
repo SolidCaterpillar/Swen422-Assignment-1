@@ -52,27 +52,31 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
 
   useEffect(() => {
     if (!location) return;
-    
     const data = getMultiYearData(location);
-    if (data.length === 0) return;
-    
-    // Get all animal types from the data
-    const animals = new Set<string>();
-    data.forEach(d => {
-      Object.keys(d).forEach(key => {
-        if (key !== 'year') animals.add(key);
-      });
-    });
-    setAnimalTypes(Array.from(animals));
-    
-    renderChart(data, Array.from(animals));
-  }, [location]);
+    if (!data.length) return;
+    // determine animal types
+    const animals = Array.from(new Set(data.flatMap(d => Object.keys(d).filter(k => k !== 'year'))));
+    setAnimalTypes(animals);
+    renderChart(data, animals, year);
+  }, [location, year]);
 
-  const renderChart = (data: ChartData[], animals: string[]) => {
+  const renderChart = (data: ChartData[], animals: string[], selectedYear: string) => {
     if (!chartRef.current) return;
 
     // Clear previous chart
     d3.select(chartRef.current).selectAll("*").remove();
+    // setup tooltip
+    const container = chartRef.current.parentElement as HTMLElement;
+    d3.select(container).selectAll(".tooltip").remove();
+    const tooltip = d3.select(container)
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("padding", "5px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
 
     // Set up dimensions - Increased bottom margin further
     const margin = { top: 5, right: 110, bottom: 70, left: 70 };
@@ -104,7 +108,7 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .domain(animals)
       .range(d3.schemeCategory10);
 
-    // Add scatter points for each animal series
+    // Add scatter points with interactivity
     animals.forEach(animal => {
       svg.append('g')
         .selectAll('circle')
@@ -112,9 +116,22 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
         .join('circle')
         .attr('cx', d => x(d.year) as number)
         .attr('cy', d => y(Number(d[animal]) || 0))
-        .attr('r', 4)
+        .attr('r', d => d.year === selectedYear ? 8 : 4)
         .attr('fill', color(animal))
-        .attr('opacity', 0.8);
+        .attr('opacity', 0.8)
+        .on('mouseover', function(event, d) {
+          d3.select(this).attr('r', d.year === selectedYear ? 12 : 6);
+          tooltip.style('visibility', 'visible')
+            .html(`${animal}: ${Number(d[animal])}`);
+        })
+        .on('mousemove', function(event) {
+          tooltip.style('top', (event.pageY - 10) + 'px')
+                 .style('left', (event.pageX + 10) + 'px');
+        })
+        .on('mouseout', function(event, d) {
+          d3.select(this).attr('r', d.year === selectedYear ? 8 : 4);
+          tooltip.style('visibility', 'hidden');
+        });
     });
 
     // Add X axis - Show ticks every 2 years for more granularity
