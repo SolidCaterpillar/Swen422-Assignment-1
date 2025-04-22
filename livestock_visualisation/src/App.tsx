@@ -39,15 +39,15 @@ function App() {
   }, [year, location, dataLoaded]);
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 max-h-screen overflow-hidden">
-      <h1 className="text-2xl font-bold mb-4 text-center">New Zealand Livestock Data Visualization</h1>
+    <div className="min-h-screen p-4 max-h-screen overflow-hidden">
+      <h1 className="text-2xl font-bold mb-4 text-center bg-white/50 backdrop-blur-md rounded-lg p-3 shadow">New Zealand Livestock Data Visualization</h1>
       
       {/* Main container - converts to column on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-[calc(100vh-100px)] overflow-auto">
         {/* Left panel - Year selector and Section 1 */}
         <div className="md:col-span-5 flex flex-col gap-4 max-h-[calc(100vh-120px)]">
           {/* Year selector */}
-          <div className="bg-white rounded-lg shadow p-2 h-12">
+          <div className="bg-white/50 backdrop-blur-md rounded-lg shadow p-2 h-12">
             <select 
               value={year}
               onChange={(e) => setYear(e.target.value)}
@@ -60,12 +60,12 @@ function App() {
           </div>
           
           {/* Section 1 - Main visualization */}
-            <div className="bg-white rounded-lg shadow h-[300px] md:flex-grow overflow-hidden">
+            <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[300px] md:flex-grow overflow-hidden">
             <Section1 year={year} location={location} setLocation={setLocation} />
             </div>
           
           {/* Location selector */}
-          <div className="bg-white rounded-lg shadow p-2 h-12">
+          <div className="bg-white/50 backdrop-blur-md rounded-lg shadow p-2 h-12">
             <select 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
@@ -81,9 +81,9 @@ function App() {
         {/* Right panel - Sections 2, 3, and 4 */}
         <div className="md:col-span-7 flex flex-col gap-4 max-h-[calc(100vh-120px)] overflow-auto">
           {/* Section 2 - Top visualization */}
-            <div className="bg-white rounded-lg shadow h-[300px] md:h-1/2">
-            <div className="p-2 bg-gray-100 text-center">
-              <div className="flex justify-between items-center">
+            <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[300px] md:h-1/2">
+            <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center">
+              <div className="flex justify-between items-center font-bold">
               <span>All Time Livestock Trends in {location}</span>
               <div>
                 <button 
@@ -111,14 +111,14 @@ function App() {
           {/* Bottom row with Sections 3 and 4 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
             {/* Section 3 */}
-            <div className="bg-white rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-gray-100 text-center">Distribution of Livestock at {location} in {year} </div>
+            <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[250px] md:h-auto">
+              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-bold">Distribution of Livestock at {location} in {year} </div>
               <Section3 year={year} location={location} />
             </div>
             
             {/* Section 4 */}
-            <div className="bg-white rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-gray-100 text-center">5 Years Trends in {location} </div>
+            <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[250px] md:h-auto">
+              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-bold">5 Years Trends in {location} </div>
               <Section4 year={year} location={location} />
             </div>
           </div>

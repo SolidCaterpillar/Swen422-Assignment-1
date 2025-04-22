@@ -168,7 +168,7 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
   return (
     <div>
       {/* Category toggles */}
-      <div style={{ marginBottom: 12 }}>
+      <div style={{ margin: 4 }}>
         { (Object.keys(animalCategories) as Category[]).map(cat => (
             <button
               key={cat}
