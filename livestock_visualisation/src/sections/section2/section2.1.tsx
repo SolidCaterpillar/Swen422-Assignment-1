@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
-import { filterData, getRawData, LivestockData } from '../../database/database'
+import { getRawData } from '../../database/database'
 
 interface Section2Props {
   year: string
@@ -48,7 +48,6 @@ const getMultiYearData = (location: string): ChartData[] => {
 // Jackie Section 2
 const Section2: React.FC<Section2Props> = ({ year, location }) => {
   const chartRef = useRef<SVGSVGElement | null>(null);
-  const [animalTypes, setAnimalTypes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!location) return;
@@ -63,16 +62,27 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
         if (key !== 'year') animals.add(key);
       });
     });
-    setAnimalTypes(Array.from(animals));
-    
-    renderChart(data, Array.from(animals));
-  }, [location]);
+    const animalArray = Array.from(animals);
+    renderChart(data, animalArray, year);
+  }, [location, year]);
 
-  const renderChart = (data: ChartData[], animals: string[]) => {
+  const renderChart = (data: ChartData[], animals: string[], selectedYear: string) => {
     if (!chartRef.current) return;
 
     // Clear previous chart
     d3.select(chartRef.current).selectAll("*").remove();
+    // Remove existing tooltip and create new one using parentElement
+    const container = chartRef.current.parentElement as HTMLElement;
+    d3.select(container).selectAll(".tooltip").remove();
+    const tooltip = d3.select(container)
+      .append("div")
+      .attr("class", "tooltip")
+      .style("position", "absolute")
+      .style("background", "#fff")
+      .style("border", "1px solid #ccc")
+      .style("padding", "5px")
+      .style("pointer-events", "none")
+      .style("visibility", "hidden");
 
     // Set up dimensions - Increased bottom margin further
     const margin = { top: 5, right: 110, bottom: 70, left: 70 };
@@ -116,14 +126,26 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .y0(d => y(d[0]))
       .y1(d => y(d[1]));
 
-    // Add areas
+    // Add areas with interactivity
     svg.selectAll(".area")
       .data(stackedData)
       .join("path")
       .attr("class", "area")
-      .attr("fill", (d, i) => color(d.key))
+      .attr("fill", d => color(d.key))
       .attr("opacity", 0.7)
-      .attr("d", area);
+      .attr("d", area)
+      .on("mouseover", function(_, d) {
+        d3.select(this).attr("opacity", 1);
+        tooltip.style("visibility", "visible").html(d.key);
+      })
+      .on("mousemove", function(event) {
+        tooltip.style("top", (event.pageY - 10) + "px")
+               .style("left", (event.pageX + 10) + "px");
+      })
+      .on("mouseout", function() {
+        d3.select(this).attr("opacity", 0.7);
+        tooltip.style("visibility", "hidden");
+      });
 
     // Add X axis - Show ticks every 2 years for more granularity
     const years = data.map(d => d.year);
@@ -164,7 +186,7 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .selectAll("g")
       .data(animals)
       .join("g")
-      .attr("transform", (d, i) => `translate(${width + 20}, ${i * 20})`);
+      .attr("transform", (_, i) => `translate(${width + 20}, ${i * 20})`);
 
     legend.append("rect")
       .attr("x", 0)
@@ -177,6 +199,20 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .attr("y", 9.5)
       .attr("dy", "0.35em")
       .text(d => d);
+
+    // Add vertical line for selected year
+    const xPos = x(selectedYear as string);
+    if (xPos !== undefined) {
+      svg.append("line")
+        .attr("class", "selected-year-line")
+        .attr("x1", xPos)
+        .attr("x2", xPos)
+        .attr("y1", 0)
+        .attr("y2", height)
+        .attr("stroke", "black")
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "4");
+    }
   };
 
   return (
