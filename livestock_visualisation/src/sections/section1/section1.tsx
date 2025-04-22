@@ -84,7 +84,7 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
     // Compute combined totals for all active categories
     const regionData: Record<string, number> = {}
     Object.keys(paths).forEach(region => {
-      const resp = filterData(year, names[region])
+      const resp = filterData(year, names[region as keyof typeof names])
       const data = resp?.data ?? {}
       let sum = 0
       activeCats.forEach(cat => {
@@ -114,7 +114,7 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
         .attr('d', paths[key])
         .attr('fill', colorScale(count))
         .attr('stroke', '#333')
-        .attr('data-name', names[key])
+        .attr('data-name', names[key as keyof typeof names])
         .on('mouseover', function() {
           d3.select(this).attr('stroke','#000').attr('stroke-width',2)
         })
