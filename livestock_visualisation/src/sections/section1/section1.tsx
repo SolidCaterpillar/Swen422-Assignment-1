@@ -170,23 +170,18 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
       {/* Category toggles */}
       <div style={{ marginBottom: 12 }}>
         { (Object.keys(animalCategories) as Category[]).map(cat => (
-          <button
-            key={cat}
-            onClick={()=>toggleCategory(cat)}
-            style={{
-              backgroundColor: activeCats.has(cat)
-                ? animalCategories[cat]
-                : '#eee',
-              color: activeCats.has(cat) ? '#fff' : '#000',
-              border: `1px solid ${animalCategories[cat]}`,
-              borderRadius: 4,
-              padding: '6px 12px',
-              marginRight: 8,
-              cursor: 'pointer'
-            }}
-          >
-            {cat}
-          </button>
+            <button
+              key={cat}
+              onClick={() => toggleCategory(cat)}
+              className={`btn ${activeCats.has(cat) ? 'active' : ''}`}
+              style={{
+              backgroundColor: activeCats.has(cat) ? animalCategories[cat] : undefined,
+              borderColor: animalCategories[cat],
+              marginRight: '8px'
+              }}
+            >
+              {cat}
+            </button>
         )) }
       </div>
 

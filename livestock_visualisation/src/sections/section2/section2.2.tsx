@@ -1,176 +1,184 @@
-import React, { useEffect, useRef, useState } from 'react';
-import * as d3 from 'd3';
-import { getRawData, LivestockData } from '../../database/database';
+import React, { useEffect, useRef, useState } from 'react'
+import * as d3 from 'd3'
+import { filterData, getRawData, LivestockData } from '../../database/database'
 
 interface Section2Props {
-  year: string;
-  location: string;
+  year: string
+  location: string
 }
 
-interface ScatterDataPoint {
-  animal: string;
+// Data structure for our chart
+interface ChartData {
   year: string;
-  count: number;
+  [animal: string]: string | number;
 }
+
+// Function to get data across all years for a specific location
+const getMultiYearData = (location: string): ChartData[] => {
+  const rawData = getRawData();
+  const filteredByLocation = rawData.filter(item => item.geography_name === location);
+  
+  // Group by year
+  const dataByYear = new Map<string, Map<string, number>>();
+  
+  filteredByLocation.forEach(item => {
+    if (!dataByYear.has(item.year)) {
+      dataByYear.set(item.year, new Map<string, number>());
+    }
+    const yearData = dataByYear.get(item.year)!;
+    if (item.count !== null) {
+      yearData.set(item.animal, item.count);
+    }
+  });
+  
+  // Convert to chart data format
+  const chartData: ChartData[] = [];
+  dataByYear.forEach((animalCounts, year) => {
+    const yearData: ChartData = { year };
+    animalCounts.forEach((count, animal) => {
+      yearData[animal] = count;
+    });
+    chartData.push(yearData);
+  });
+  
+  // Sort by year
+  return chartData.sort((a, b) => a.year.localeCompare(b.year));
+};
 
 // Jackie Section 2
 const Section2: React.FC<Section2Props> = ({ year, location }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [data, setData] = useState<ScatterDataPoint[]>([]);
+  const chartRef = useRef<SVGSVGElement | null>(null);
+  const [animalTypes, setAnimalTypes] = useState<string[]>([]);
 
-  // Fetch and prepare data
   useEffect(() => {
     if (!location) return;
-
-    const rawData = getRawData();
     
-    // Filter for the selected location and remove null values
-    const filteredData = rawData
-      .filter(item => item.geography_name === location && item.count !== null)
-      .map(item => ({
-        animal: item.animal,
-        year: item.year,
-        count: item.count as number
-      }));
+    const data = getMultiYearData(location);
+    if (data.length === 0) return;
     
-    setData(filteredData);
+    // Get all animal types from the data
+    const animals = new Set<string>();
+    data.forEach(d => {
+      Object.keys(d).forEach(key => {
+        if (key !== 'year') animals.add(key);
+      });
+    });
+    setAnimalTypes(Array.from(animals));
+    
+    renderChart(data, Array.from(animals));
   }, [location]);
 
-  // Create/update scatterplot
-  useEffect(() => {
-    if (!data.length || !svgRef.current) return;
-
-    // Get container dimensions
-    const containerWidth = containerRef.current?.clientWidth || 800;
-    const containerHeight = Math.min(500, window.innerHeight * 0.7); // Limit height
-
-    const margin = { top: 40, right: 80, bottom: 70, left: 80 };
-    const width = containerWidth - margin.left - margin.right;
-    const height = containerHeight - margin.top - margin.bottom;
+  const renderChart = (data: ChartData[], animals: string[]) => {
+    if (!chartRef.current) return;
 
     // Clear previous chart
-    d3.select(svgRef.current).selectAll("*").remove();
+    d3.select(chartRef.current).selectAll("*").remove();
 
-    // Create SVG with viewBox for better scaling
-    const svg = d3
-      .select(svgRef.current)
-      .attr("width", containerWidth)
-      .attr("height", containerHeight)
-      .attr("viewBox", `0 0 ${containerWidth} ${containerHeight}`)
-      .attr("preserveAspectRatio", "xMidYMid meet")
+    // Set up dimensions - Increased bottom margin further
+    const margin = { top: 5, right: 110, bottom: 70, left: 70 };
+    // Use offsetWidth/offsetHeight for potentially more accurate dimensions if available
+    const svgElement = chartRef.current;
+    const availableWidth = svgElement.clientWidth || 900; // Fallback width
+    const availableHeight = svgElement.clientHeight || 500; // Fallback height
+    const width = availableWidth - margin.left - margin.right;
+    const height = availableHeight - margin.top - margin.bottom; // Height is reduced due to increased margin
+
+    // Create SVG group
+    const svg = d3.select(chartRef.current)
+      .attr("viewBox", `0 0 ${availableWidth} ${availableHeight}`) // Ensure viewBox matches available dimensions
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Get unique animals for color scale
-    const animals = Array.from(new Set(data.map(d => d.animal)));
-    
-    // Create color scale
-    const colorScale = d3.scaleOrdinal()
+    // Set up scales
+    const x = d3.scalePoint<string>()
+      .domain(data.map(d => d.year))
+      .range([0, width])
+      .padding(0.1);
+
+    // Replace stacking and area chart code with scatter plot implementation
+    const maxCount = d3.max(data, d => d3.max(animals, key => Number(d[key]) || 0)) || 0;
+    const y = d3.scaleLinear()
+      .domain([0, maxCount])
+      .range([height, 0]);
+    const color = d3.scaleOrdinal<string>()
       .domain(animals)
       .range(d3.schemeCategory10);
 
-    // Create X scale
-    const xScale = d3.scalePoint()
-      .domain(Array.from(new Set(data.map(d => d.year))).sort())
-      .range([0, width])
-      .padding(0.5);
+    // Add scatter points for each animal series
+    animals.forEach(animal => {
+      svg.append('g')
+        .selectAll('circle')
+        .data(data)
+        .join('circle')
+        .attr('cx', d => x(d.year) as number)
+        .attr('cy', d => y(Number(d[animal]) || 0))
+        .attr('r', 4)
+        .attr('fill', color(animal))
+        .attr('opacity', 0.8);
+    });
 
-    // Evaluate if we need a logarithmic scale
-    const maxCount = d3.max(data, d => d.count) || 0;
-    const minCount = d3.min(data, d => d.count) || 0;
-    
-    // Create Y scale (using log scale if data range is large)
-    const yScale = (maxCount / minCount > 100 && minCount > 0) 
-      ? d3.scaleLog()
-          .domain([Math.max(1, minCount), maxCount])
-          .range([height, 0])
-          .nice()
-      : d3.scaleLinear()
-          .domain([0, maxCount * 1.05]) // Add 5% padding at the top
-          .range([height, 0])
-          .nice();
+    // Add X axis - Show ticks every 2 years for more granularity
+    const years = data.map(d => d.year);
+    const tickYears = years.filter((_, i) => i % 2 === 0); // Show every 2nd year
 
-    // Add X axis
     svg.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(xScale))
+      .call(d3.axisBottom(x)
+        .tickValues(tickYears)) // Use specific tick values (every 2 years)
       .selectAll("text")
+      .attr("transform", "rotate(-45)")
       .style("text-anchor", "end")
-      .attr("dx", "-.8em")
-      .attr("dy", ".15em")
-      .attr("transform", "rotate(-45)");
+      .attr("dx", "-0.8em")
+      .attr("dy", "0.15em");
 
     // Add Y axis
     svg.append("g")
-      .call(d3.axisLeft(yScale));
+      .call(d3.axisLeft(y).tickFormat(d3.format(".2s"))); // Format ticks (e.g., 60M)
 
-    // Add dots
-    svg.selectAll("dot")
-      .data(data)
-      .enter()
-      .append("circle")
-      .attr("cx", d => xScale(d.year) || 0)
-      .attr("cy", d => yScale(d.count))
-      .attr("r", 5)
-      .style("fill", d => colorScale(d.animal) as string)
-      .style("opacity", 0.7);
-
-    // Add X axis label
+    // Add titles - Adjusted Y position for "Years" title
     svg.append("text")
-      .attr("transform", `translate(${width / 2}, ${height + margin.bottom - 10})`)
+      .attr("x", width / 2)
+      .attr("y", height + margin.bottom - 25) // Adjusted y position further up to ensure visibility
       .style("text-anchor", "middle")
-      .text("Year");
+      .text("Years");
 
-    // Add Y axis label
     svg.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", 0 - margin.left)
-      .attr("x", 0 - (height / 2))
-      .attr("dy", "1em")
+      .attr("y", -margin.left + 15) // Adjusted y position closer to axis
+      .attr("x", -height / 2)
       .style("text-anchor", "middle")
       .text("Livestock Count");
 
-    // Add title
-    svg.append("text")
-      .attr("x", width / 2)
-      .attr("y", 0 - margin.top / 2)
-      .attr("text-anchor", "middle")
-      .style("font-size", "16px")
-      .text(`Livestock Population in ${location} Across Years`);
-      
-    // Add legend
     const legend = svg.append("g")
-      .attr("transform", `translate(${width - 100}, 10)`);
-      
-    animals.forEach((animal, i) => {
-      const legendRow = legend.append("g")
-        .attr("transform", `translate(0, ${i * 20})`);
-        
-      legendRow.append("rect")
-        .attr("width", 10)
-        .attr("height", 10)
-        .attr("fill", colorScale(animal) as string);
-        
-      legendRow.append("text")
-        .attr("x", 20)
-        .attr("y", 10)
-        .attr("text-anchor", "start")
-        .style("font-size", "12px")
-        .text(animal);
-    });
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "start")
+      .selectAll("g")
+      .data(animals)
+      .join("g")
+      .attr("transform", (d, i) => `translate(${width + 20}, ${i * 20})`);
 
-  }, [data]);
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", color);
+
+    legend.append("text")
+      .attr("x", 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.35em")
+      .text(d => d);
+  };
 
   return (
-    <div ref={containerRef} className="h-full w-full flex flex-col items-center justify-center">
-      <svg ref={svgRef} className="max-w-full"></svg>
-      <p className="text-gray-500 mt-4">
-        Scatterplot showing livestock counts for {location} across years
-        {year !== 'all' && ` (Current year: ${year})`}
-      </p>
+    <div className="w-full h-[90%]">
+        <svg
+          ref={chartRef}
+          className="w-full h-full"
+        />
     </div>
-  );
-};
+  )
+}
 
 export default Section2;

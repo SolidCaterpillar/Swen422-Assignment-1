@@ -70,26 +70,30 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
 
   const renderChart = (data: ChartData[], animals: string[]) => {
     if (!chartRef.current) return;
-    
+
     // Clear previous chart
     d3.select(chartRef.current).selectAll("*").remove();
-    
-    // Set up dimensions
-    const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+
+    // Set up dimensions - Increased bottom margin further
+    const margin = { top: 5, right: 110, bottom: 70, left: 70 };
+    // Use offsetWidth/offsetHeight for potentially more accurate dimensions if available
     const svgElement = chartRef.current;
-    const width = svgElement.clientWidth - margin.left - margin.right;
-    const height = svgElement.clientHeight - margin.top - margin.bottom;
-    
+    const availableWidth = svgElement.clientWidth || 900; // Fallback width
+    const availableHeight = svgElement.clientHeight || 500; // Fallback height
+    const width = availableWidth - margin.left - margin.right;
+    const height = availableHeight - margin.top - margin.bottom; // Height is reduced due to increased margin
+
     // Create SVG group
     const svg = d3.select(chartRef.current)
+      .attr("viewBox", `0 0 ${availableWidth} ${availableHeight}`) // Ensure viewBox matches available dimensions
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
-    
+
     // Stack the data
     const stack = d3.stack<ChartData>()
       .keys(animals)
       .value((d, key) => Number(d[key]) || 0);
-    
+
     const stackedData = stack(data);
     
     // Set up scales
@@ -97,22 +101,21 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .domain(data.map(d => d.year))
       .range([0, width])
       .padding(0.1);
-    
+
     const y = d3.scaleLinear()
       .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1]) || 0])
       .range([height, 0]);
-    
-    // Color scale
+
     const color = d3.scaleOrdinal<string>()
       .domain(animals)
       .range(d3.schemeCategory10);
-    
+
     // Create the area generator
     const area = d3.area<d3.SeriesPoint<ChartData>>()
       .x(d => x(d.data.year) as number)
       .y0(d => y(d[0]))
       .y1(d => y(d[1]));
-    
+
     // Add areas
     svg.selectAll(".area")
       .data(stackedData)
@@ -121,66 +124,69 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .attr("fill", (d, i) => color(d.key))
       .attr("opacity", 0.7)
       .attr("d", area);
-    
-    // Add X axis
+
+    // Add X axis - Show ticks every 2 years for more granularity
+    const years = data.map(d => d.year);
+    const tickYears = years.filter((_, i) => i % 2 === 0); // Show every 2nd year
+
     svg.append("g")
       .attr("transform", `translate(0,${height})`)
-      .call(d3.axisBottom(x))
+      .call(d3.axisBottom(x)
+        .tickValues(tickYears)) // Use specific tick values (every 2 years)
       .selectAll("text")
       .attr("transform", "rotate(-45)")
-      .style("text-anchor", "end");
-    
+      .style("text-anchor", "end")
+      .attr("dx", "-0.8em")
+      .attr("dy", "0.15em");
+
     // Add Y axis
     svg.append("g")
-      .call(d3.axisLeft(y));
-    
-    // Add titles
+      .call(d3.axisLeft(y).tickFormat(d3.format(".2s"))); // Format ticks (e.g., 60M)
+
+    // Add titles - Adjusted Y position for "Years" title
     svg.append("text")
       .attr("x", width / 2)
-      .attr("y", height + margin.bottom - 10)
+      .attr("y", height + margin.bottom - 25) // Adjusted y position further up to ensure visibility
       .style("text-anchor", "middle")
       .text("Years");
-    
+
     svg.append("text")
       .attr("transform", "rotate(-90)")
-      .attr("y", -margin.left + 20)
+      .attr("y", -margin.left + 15) // Adjusted y position closer to axis
       .attr("x", -height / 2)
       .style("text-anchor", "middle")
       .text("Livestock Count");
-    
-    // Add legend
+
     const legend = svg.append("g")
-      .attr("transform", `translate(${width - 100}, 0)`);
-    
-    animals.forEach((animal, i) => {
-      const legendRow = legend.append("g")
-        .attr("transform", `translate(0, ${i * 20})`);
-        
-      legendRow.append("rect")
-        .attr("width", 15)
-        .attr("height", 15)
-        .attr("fill", color(animal));
-        
-      legendRow.append("text")
-        .attr("x", 20)
-        .attr("y", 12.5)
-        .attr("text-anchor", "start")
-        .text(animal);
-    });
+      .attr("font-family", "sans-serif")
+      .attr("font-size", 10)
+      .attr("text-anchor", "start")
+      .selectAll("g")
+      .data(animals)
+      .join("g")
+      .attr("transform", (d, i) => `translate(${width + 20}, ${i * 20})`);
+
+    legend.append("rect")
+      .attr("x", 0)
+      .attr("width", 19)
+      .attr("height", 19)
+      .attr("fill", color);
+
+    legend.append("text")
+      .attr("x", 24)
+      .attr("y", 9.5)
+      .attr("dy", "0.35em")
+      .text(d => d);
   };
 
   return (
-    <div className="h-full w-full flex flex-col items-center justify-center">
-      <div className="w-full h-[90%]">
-        <svg 
-          ref={chartRef} 
+    <div className="w-full h-[90%]">
+        <svg
+          ref={chartRef}
           className="w-full h-full"
-          viewBox={`0 0 900 500`}
-          preserveAspectRatio="xMidYMid meet"
         />
-      </div>
     </div>
   )
 }
 
-export default Section2
+export default Section2;
