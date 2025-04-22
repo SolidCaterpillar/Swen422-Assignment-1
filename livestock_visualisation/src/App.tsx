@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 import Section1 from './sections/section1/section1'
-import Section2 from './sections/section2/section2.1'
+import Section2_1 from './sections/section2/section2.1'
+import Section2_2 from './sections/section2/section2.2'
 import Section3 from './sections/section3/section3'
 import Section4 from './sections/section4/section4'
 import { loadData, updateData } from './database/dataloader'
@@ -13,6 +14,7 @@ function App() {
   const [dataLoaded, setDataLoaded] = useState(false)
   const [availableYears, setAvailableYears] = useState<string[]>([])
   const [availableLocations, setAvailableLocations] = useState<string[]>([])
+  const [activeSection, setActiveSection] = useState('section2_1')
 
   // Load data on component mount
   useEffect(() => {
@@ -38,7 +40,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 max-h-screen overflow-hidden">
-      <h1 className="text-2xl font-bold mb-4">Design 1 - Walkthrough</h1>
+      <h1 className="text-2xl font-bold mb-4 text-center">New Zealand Livestock Data Visualization</h1>
       
       {/* Main container - converts to column on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-[calc(100vh-100px)] overflow-auto">
@@ -58,7 +60,7 @@ function App() {
           </div>
           
           {/* Section 1 - Main visualization */}
-            <div className="bg-white rounded-lg shadow flex-grow overflow-auto">
+            <div className="bg-white rounded-lg shadow h-[300px] md:flex-grow overflow-hidden">
             <Section1 year={year} location={location} setLocation={setLocation} />
             </div>
           
@@ -79,10 +81,32 @@ function App() {
         {/* Right panel - Sections 2, 3, and 4 */}
         <div className="md:col-span-7 flex flex-col gap-4 max-h-[calc(100vh-120px)] overflow-auto">
           {/* Section 2 - Top visualization */}
-          <div className="bg-white rounded-lg shadow h-[300px] md:h-1/2">
-            <div className="p-2 bg-gray-100 text-center">Livestock Trends in {location}</div>
-            <Section2 year={year} location={location} />
-          </div>
+            <div className="bg-white rounded-lg shadow h-[300px] md:h-1/2">
+            <div className="p-2 bg-gray-100 text-center">
+              <div className="flex justify-between items-center">
+              <span>All Time Livestock Trends in {location}</span>
+              <div>
+                <button 
+                className={`btn mr-2 ${activeSection === 'section2_1' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                onClick={() => setActiveSection('section2_1')}
+                >
+                Area Graph
+                </button>
+                <button 
+                className={`btn ${activeSection === 'section2_2' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
+                onClick={() => setActiveSection('section2_2')}
+                >
+                Scatter Plot
+                </button>
+              </div>
+              </div>
+            </div>
+            {activeSection === 'section2_1' ? (
+              <Section2_1 year={year} location={location} />
+            ) : (
+              <Section2_2 year={year} location={location} />
+            )}
+            </div>
           
           {/* Bottom row with Sections 3 and 4 */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
