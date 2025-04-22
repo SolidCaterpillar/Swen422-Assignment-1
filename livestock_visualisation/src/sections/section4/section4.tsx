@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useMemo } from 'react'
 import { getCurrentData, FilteredData, getRawData, filterData } from '../../database/database'
 import * as d3 from 'd3'
 
@@ -23,7 +23,13 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
   const year1Before = String(parseInt(year) - 1)
   const year1After = String(parseInt(year) + 1)
   const year2After = String(parseInt(year) + 2)
-  const yearRange = [year2Before, year1Before, year, year1After, year2After]
+  const yearRange = useMemo(() => {
+    const year2Before = String(parseInt(year) - 2);
+    const year1Before = String(parseInt(year) - 1);
+    const year1After = String(parseInt(year) + 1);
+    const year2After = String(parseInt(year) + 2);
+    return [year2Before, year1Before, year, year1After, year2After];
+  }, [year]);
 
     // Load data for all years in the range
   useEffect(() => {
