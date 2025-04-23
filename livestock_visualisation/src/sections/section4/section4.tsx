@@ -405,8 +405,8 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
 
   // Main render with chart only (no data table)
   return (
-    <div className="h-full w-full">
-      <svg ref={chartRef} width="100%" height="92%"></svg>
+    <div className="h-[90%] w-full">
+      <svg ref={chartRef} width="100%" height="100%"></svg>
     </div>
   )
 }
