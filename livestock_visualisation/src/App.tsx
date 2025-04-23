@@ -39,8 +39,8 @@ function App() {
   }, [year, location, dataLoaded]);
 
   return (
-    <div className="min-h-screen p-4 max-h-screen overflow-hidden">
-      <h1 className="text-2xl font-bold mb-4 text-center bg-white/50 backdrop-blur-md rounded-lg p-3 shadow">New Zealand Livestock Data Visualization</h1>
+    <div className="min-h-screen p-4 overflow-auto">
+      <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-center bg-white/50 backdrop-blur-md rounded-lg p-3 shadow">New Zealand Livestock Data Visualization</h1>
       
       {/* Main container - converts to column on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-auto md:h-[calc(100vh-100px)] overflow-auto">
@@ -84,7 +84,7 @@ function App() {
             <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[300px] md:h-1/2">
             <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center">
               <div className="flex justify-between items-center font-bold">
-              <span>All Time Livestock Trends in {location}</span>
+              <span className="text-base sm:text-lg md:text-xl lg:text-2xl">All-time Trends</span>
               <div>
                 <button 
                 className={`btn mr-2 ${activeSection === 'section2_1' ? 'bg-blue-500 text-white' : 'bg-gray-200'}`}
@@ -112,13 +112,13 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
             {/* Section 3 */}
             <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-bold">Distribution of Livestock at {location} in {year} </div>
+              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-semibold text-base sm:text-lg md:text-xl lg:text-2xl">Distribution of Livestock at {location} in {year}</div>
               <Section3 year={year} location={location} />
             </div>
             
             {/* Section 4 */}
             <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-bold">5 Years Trends in {location} </div>
+              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-semibold text-base sm:text-lg md:text-xl lg:text-2xl">5 Years Trends in {location}</div>
               <Section4 year={year} location={location} />
             </div>
           </div>

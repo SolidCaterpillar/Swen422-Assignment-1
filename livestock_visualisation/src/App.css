@@ -2,7 +2,9 @@
 
 /* Custom button styling */
 .btn {
-    @apply px-4 py-2 bg-gray-500 text-white font-medium rounded-md 
-           hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 
-           transition-colors duration-200 ease-in-out shadow-sm cursor-pointer;
-  }
+    @apply px-3 py-1.5 text-sm bg-gray-500 text-white font-medium rounded
+                 sm:px-4 sm:py-2 sm:text-base
+                 md:px-5 md:py-2.5
+                 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300
+                 transition-colors duration-200 ease-in-out shadow-sm cursor-pointer;
+}
