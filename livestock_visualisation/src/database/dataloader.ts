@@ -3,7 +3,7 @@ import { LivestockData, setRawData, filterData } from './database';
 // Function to load and parse the CSV data
 export const loadData = async (): Promise<boolean> => {
   try {
-    const response = await fetch('/src/assets/Data/livestock-numbers-clean-1971-2019.csv');
+    const response = await fetch('/src/assets/Data/livestock-numbers-clean-1990-2019.csv');
     const csvText = await response.text();
     
     // Parse CSV
