@@ -124,9 +124,12 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
           tooltip.style('visibility', 'visible')
             .html(`${animal}: ${Number(d[animal])}`);
         })
-        .on('mousemove', function(event) {
-          tooltip.style('top', (event.pageY - 10) + 'px')
-                 .style('left', (event.pageX + 10) + 'px');
+        .on("mousemove", function(event) {
+          const [mouseX, mouseY] = d3.pointer(event);
+          
+          tooltip
+            .style("left", (mouseX + margin.left + 10) + "px")
+            .style("top", (mouseY + margin.top + 60) + "px");
         })
         .on('mouseout', function(event, d) {
           d3.select(this).attr('r', d.year === selectedYear ? 8 : 4);

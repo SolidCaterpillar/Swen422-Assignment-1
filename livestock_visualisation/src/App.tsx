@@ -64,18 +64,36 @@ function App() {
             <Section1 year={year} location={location} setLocation={setLocation} />
             </div>
           
-          {/* Location selector */}
-          <div className="bg-white/50 backdrop-blur-md rounded-lg shadow p-2 h-12">
+            {/* Location selector */}
+            <div className="bg-white/50 backdrop-blur-md rounded-lg shadow p-2 h-12">
             <select 
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               className="w-full h-full px-2 bg-gray-100 rounded"
             >
-              {availableLocations.map(loc => (
-                <option key={loc} value={loc}>{loc}</option>
+              <option value="New Zealand">New Zealand</option>
+              {[
+              "Waikato",
+              "Canterbury",
+              "West Coast",
+              "Manawatu‑Whanganui",
+              "Gisborne",
+              "Hawke's Bay",
+              "Nelson",
+              "Tasman",
+              "Marlborough",
+              "Northland",
+              "Bay of Plenty",
+              "Taranaki",
+              "Auckland",
+              "Wellington",
+              "Southland",
+              "Otago"
+              ].map(name => (
+              <option key={name} value={name}>{name}</option>
               ))}
             </select>
-          </div>
+            </div>
         </div>
         
         {/* Right panel - Sections 2, 3, and 4 */}

@@ -139,8 +139,11 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
         tooltip.style("visibility", "visible").html(d.key);
       })
       .on("mousemove", function(event) {
-        tooltip.style("top", (event.pageY - 10) + "px")
-               .style("left", (event.pageX + 10) + "px");
+        const [mouseX, mouseY] = d3.pointer(event);
+        
+        tooltip
+          .style("left", (mouseX + margin.left + 10) + "px")
+          .style("top", (mouseY + margin.top + 60) + "px");
       })
       .on("mouseout", function() {
         d3.select(this).attr("opacity", 0.7);
