@@ -186,8 +186,6 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .style('font-size', '14px')
       .text('Year')
 
-    // Removed title section
-
     // Highlight the selected year with a vertical line
     svg.append('line')
       .attr('x1', x(year) || 0)
@@ -198,65 +196,6 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .attr('stroke-width', 1.5)
       .attr('stroke-dasharray', '5,5')
       .attr('opacity', 0.9)
-
-    // Add a total line if we have enough animals
-    if (animals.length > 1) {
-      // Create total data points by summing all animals for each year
-      const totalByYear = yearRange.map(yr => {
-        const yearData = timelineData.filter(d => d.year === yr && d.count !== null);
-        const total = yearData.reduce((sum, d) => sum + (d.count as number), 0);
-        return {
-          year: yr,
-          animal: 'Total',
-          count: total
-        };
-      });
-
-      // Draw the total line (thicker)
-      svg.append('path')
-        .datum(totalByYear)
-        .attr('fill', 'none')
-        .attr('stroke', '#333')
-        .attr('stroke-width', 3)
-        .attr('d', line)
-
-      // Add circle markers for total
-      svg.selectAll('.total-point')
-        .data(totalByYear)
-        .join('circle')
-        .attr('class', 'total-point')
-        .attr('cx', d => x(d.year) || 0)
-        .attr('cy', d => y(d.count as number))
-        .attr('r', 5)
-        .attr('fill', 'white')
-        .attr('stroke', '#333')
-        .attr('stroke-width', 2)
-        .on('mouseover', function (event, d) {
-          // Highlight point
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 8)
-
-          // Show tooltip
-          svg.append('text')
-            .attr('class', 'tooltip')
-            .attr('x', x(d.year) || 0)
-            .attr('y', y(d.count as number) - 15)
-            .attr('text-anchor', 'middle')
-            .style('font-size', '12px')
-            .style('font-weight', 'bold')
-            .text(`Total: ${d.count !== null ? d3.format(',')(d.count) : 'N/A'}`)
-        })
-        .on('mouseout', function () {
-          d3.select(this)
-            .transition()
-            .duration(200)
-            .attr('r', 5)
-
-          svg.selectAll('.tooltip').remove()
-        })
-    }
 
     // Create individual lines for each animal
     animals.forEach((animal, i) => {
@@ -318,42 +257,10 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
     const legend = svg.append('g')
       .attr('transform', `translate(${width + 20}, 0)`)
 
-    // Add Total to legend first if we have multiple animals
-    if (animals.length > 1) {
-      const totalLegendRow = legend.append('g')
-        .attr('transform', 'translate(0, 0)')
-
-      totalLegendRow.append('line')
-        .attr('x1', 0)
-        .attr('y1', 7.5)
-        .attr('x2', 30)
-        .attr('y2', 7.5)
-        .attr('stroke', '#333')
-        .attr('stroke-width', 3)
-
-      totalLegendRow.append('circle')
-        .attr('cx', 15)
-        .attr('cy', 7.5)
-        .attr('r', 4)
-        .attr('fill', 'white')
-        .attr('stroke', '#333')
-        .attr('stroke-width', 2)
-
-      totalLegendRow.append('text')
-        .attr('x', 35)
-        .attr('y', 10)
-        .attr('text-anchor', 'start')
-        .style('font-size', '12px')
-        .style('alignment-baseline', 'middle')
-        .style('font-weight', 'bold')
-        .text('Total')
-    }
-
     // Add animal entries to legend
     animals.forEach((animal, i) => {
-      const yOffset = animals.length > 1 ? 25 : 0; // Add space if we have a Total
       const legendRow = legend.append('g')
-        .attr('transform', `translate(0, ${yOffset + i * 25})`)
+        .attr('transform', `translate(0, ${i * 25})`)
 
       // Line style sample
       legendRow.append('line')
@@ -396,12 +303,6 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       </div>
     )
   }
-
-  // Calculate totals for the chart but no longer needed for table
-  yearRange.forEach(yr => {
-    const yearData = timelineData.filter(d => d.year === yr && d.count !== null);
-    // We still calculate totals as they're used for the total line
-  });
 
   // Main render with chart only (no data table)
   return (
