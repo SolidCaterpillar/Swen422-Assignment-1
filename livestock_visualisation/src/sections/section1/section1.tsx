@@ -8,12 +8,12 @@ interface Section1Props {
   setLocation: (location: string) => void
 }
 
-// Define animal categories and their colors
+// your animal categories/colors…
 const animalCategories = {
-  "Beef cattle": "#FF5733",
-  "Dairy cattle": "#33FF57",
-  "Sheep": "#3357FF",
-  "Deer": "#FF33A1"
+  "Beef cattle": "#d10000",
+  "Dairy cattle": "#FFFDD0",
+  "Sheep":      "#808080",
+  "Deer":       "#964B00"
 } as const
 type Category = keyof typeof animalCategories
 
@@ -60,54 +60,62 @@ const simplemaps_countrymap_mapinfo = {
 
 const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
   const svgRef = useRef<SVGSVGElement|null>(null)
-
-  // track which categories are toggled on
   const [activeCats, setActiveCats] = useState<Set<Category>>(
     new Set(Object.keys(animalCategories) as Category[])
   )
-
   const toggleCategory = (cat: Category) => {
     setActiveCats(prev => {
       const next = new Set(prev)
-      if (next.has(cat)) next.delete(cat)
-      else next.add(cat)
+      next.has(cat) ? next.delete(cat) : next.add(cat)
       return next
     })
   }
 
+  // pre‐build your full list of years as strings:
+  const allYears = React.useMemo(
+    () => Array.from({ length: 2019 - 1971 + 1 }, (_, i) => (1971 + i).toString()),
+    []
+  )
+
   useEffect(() => {
     if (!svgRef.current) return
-
     const { paths, names, initial_view } = simplemaps_countrymap_mapinfo
-    const width = initial_view.x2, height = initial_view.y2
+    const width  = initial_view.x2
+    const height = initial_view.y2
 
-    // Compute combined totals for all active categories
+    // 1) compute every region‐sum for the **current** year…
     const regionData: Record<string, number> = {}
     Object.keys(paths).forEach(region => {
-      const resp = filterData(year, names[region as keyof typeof names])
-      const data = resp?.data ?? {}
+      const resp = filterData(year, names[region as keyof typeof names])?.data || {}
       let sum = 0
-      activeCats.forEach(cat => {
-        sum += Number(data[cat] || 0)
-      })
+      activeCats.forEach(cat => sum += Number(resp[cat] || 0))
       regionData[region] = sum
     })
 
-    const maxCount = d3.max(Object.values(regionData)) || 1
-    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxCount])
+    // 2) …BUT build your colour‐scale domain **across all years** so it never jumps:
+    const allSums: number[] = []
+    allYears.forEach(y => {
+      Object.keys(paths).forEach(region => {
+        const resp = filterData(y, names[region as keyof typeof names])?.data || {}
+        let sum = 0
+        activeCats.forEach(cat => sum += Number(resp[cat] || 0))
+        allSums.push(sum)
+      })
+    })
+    const [minVal = 0, maxVal = 1] = d3.extent(allSums) as [number, number]
+    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
+                         .domain([minVal, maxVal])
 
+    // 3) draw…
     const svg = d3.select(svgRef.current)
       .attr('viewBox', `0 0 ${width} ${height}`)
       .style('width','100%').style('height','auto')
-
     svg.selectAll('*').remove()
     const g = svg.append('g')
-
     const zoom = d3.zoom<SVGSVGElement,unknown>()
       .scaleExtent([1,8])
       .on('zoom', ({transform}) => g.attr('transform', transform))
 
-    // draw each region
     Object.keys(paths).forEach(key => {
       const count = regionData[key] || 0
       g.append('path')
@@ -125,7 +133,7 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
           const regionName = d3.select(this).attr('data-name')!
           setLocation(regionName)
           event.stopPropagation()
-          // zoom into clicked region
+          // zoom in…
           const bbox = (this as SVGPathElement).getBBox()
           const [x0,y0,x1,y1] = [bbox.x, bbox.y, bbox.x+bbox.width, bbox.y+bbox.height]
           const scale = Math.min(8, 0.9/Math.max((x1-x0)/width,(y1-y0)/height))
@@ -133,41 +141,37 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
           const ty = height/2 - scale*(y0+y1)/2
           const t = d3.zoomIdentity.translate(tx,ty).scale(scale)
           svg.transition().duration(750)
-            .call(zoom.transform as any, t, d3.pointer(event,svg.node()))
+             .call(zoom.transform as any, t, d3.pointer(event,svg.node()))
         })
     })
 
-    // legend
+    // legend (unchanged)…
     const legendWidth = 300, legendHeight = 10
     const legend = svg.append('g').attr('transform', `translate(${width-legendWidth-20},20)`)
-    const legendScale = d3.scaleLinear().domain([0,maxCount]).range([0,legendWidth])
+    const legendScale = d3.scaleLinear().domain([minVal, maxVal]).range([0,legendWidth])
     const legendAxis = d3.axisBottom(legendScale).ticks(5)
     const gradient = svg.append('defs')
       .append('linearGradient').attr('id','legend-gradient')
       .attr('x1','0%').attr('x2','100%').attr('y1','0%').attr('y2','0%')
     gradient.append('stop').attr('offset','0%').attr('stop-color',d3.interpolateYlOrRd(0))
     gradient.append('stop').attr('offset','100%').attr('stop-color',d3.interpolateYlOrRd(1))
-    legend.append('rect')
-      .attr('width',legendWidth).attr('height',legendHeight)
-      .style('fill','url(#legend-gradient)')
-    legend.append('g')
-      .attr('transform',`translate(0,${legendHeight})`)
-      .call(legendAxis)
+    legend.append('rect').attr('width',legendWidth).attr('height',legendHeight)
+          .style('fill','url(#legend-gradient)')
+    legend.append('g').attr('transform',`translate(0,${legendHeight})`)
+          .call(legendAxis)
 
     svg.call(zoom)
-
-    // reset
+    // reset…
     svg.on('click', () => {
       setLocation('New Zealand')
       svg.transition().duration(750)
         .call(zoom.transform as any, d3.zoomIdentity)
     })
 
-  }, [year, activeCats, setLocation])
+  }, [year, activeCats, allYears, setLocation])
 
   return (
     <div>
-      {/* Category toggles */}
       <div style={{ margin: 4 }}>
         { (Object.keys(animalCategories) as Category[]).map(cat => (
             <button
@@ -184,8 +188,6 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
             </button>
         )) }
       </div>
-
-      {/* The map */}
       <svg ref={svgRef}></svg>
     </div>
   )
