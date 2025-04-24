@@ -1,6 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useRef } from 'react'
 import * as d3 from 'd3'
 import { filterData, getRawData, LivestockData } from '../../database/database'
+import { useActiveCategories, Category } from '../context'
 
 interface Section2Props {
   year: string
@@ -48,19 +49,55 @@ const getMultiYearData = (location: string): ChartData[] => {
 // Jackie Section 2
 const Section2: React.FC<Section2Props> = ({ year, location }) => {
   const chartRef = useRef<SVGSVGElement | null>(null);
-  const [animalTypes, setAnimalTypes] = useState<string[]>([]);
+  const [animalTypes, setAnimalTypes] = React.useState<string[]>([]);
+  const { activeCategories } = useActiveCategories();
 
   useEffect(() => {
+    // if no categories selected: clear and draw empty frame
+    if (activeCategories.size === 0 && chartRef.current) {
+      const svgEl = chartRef.current;
+      // clear
+      d3.select(svgEl).selectAll('*').remove();
+      // dimensions & margins
+      const margin = { top: 5, right: 110, bottom: 70, left: 70 };
+      const w = svgEl.clientWidth || 900;
+      const h = svgEl.clientHeight || 500;
+      const width = w - margin.left - margin.right;
+      const height = h - margin.top - margin.bottom;
+      // setup group
+      const svg = d3.select(svgEl)
+        .attr('viewBox', `0 0 ${w} ${h}`)
+        .append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+      // x-axis using all years
+      const data = getMultiYearData(location);
+      const x = d3.scalePoint<string>()
+        .domain(data.map(d => d.year))
+        .range([0, width])
+        .padding(0.1);
+      svg.append('g')
+        .attr('transform', `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickValues(data.filter((_,i)=>i%2===0).map(d=>d.year)))
+        .selectAll('text')
+        .attr('transform','rotate(-45)')
+        .style('text-anchor','end');
+      // y-axis zero line
+      const y = d3.scaleLinear().domain([0,0]).range([height,0]);
+      svg.append('g').call(d3.axisLeft(y));
+      return;
+    }
     if (!location) return;
     const data = getMultiYearData(location);
     if (!data.length) return;
-    // determine animal types
+    // determine animal types, exclude Total cattle
     const animals = Array.from(new Set(
       data.flatMap(d => Object.keys(d).filter(k => k !== 'year' && k !== 'Total cattle'))
     ));
-    setAnimalTypes(animals);
-    renderChart(data, animals, year);
-  }, [location, year]);
+    // filter by active categories
+    const activeAnimals = animals.filter(a => activeCategories.size > 0 && activeCategories.has(a as Category));
+    setAnimalTypes(activeAnimals);
+    renderChart(data, activeAnimals, year);
+  }, [location, year, activeCategories]);
 
   const renderChart = (data: ChartData[], animals: string[], selectedYear: string) => {
     if (!chartRef.current) return;
@@ -115,10 +152,10 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       'Sheep': '#575757',
     };
 
-// Replace default ordinal scale with custom color mapping
-const color = d3.scaleOrdinal<string>()
-  .domain(animals)
-  .range(animals.map(a => colorMap[a] || '#000000'));  
+    // Replace default ordinal scale with custom color mapping
+    const color = d3.scaleOrdinal<string>()
+      .domain(animals)
+      .range(animals.map(a => colorMap[a] || '#000000'));  
 
     // Add scatter points with interactivity
     animals.forEach(animal => {

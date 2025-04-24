@@ -7,6 +7,7 @@ import Section3 from './sections/section3/section3'
 import Section4 from './sections/section4/section4'
 import { loadData, updateData } from './database/dataloader'
 import { getAvailableYears, getAvailableLocations } from './database/database'
+import { ActiveCategoriesProvider } from './sections/context'
 
 function App() {
   const [year, setYear] = useState('2019')
@@ -39,7 +40,8 @@ function App() {
   }, [year, location, dataLoaded]);
 
   return (
-    <div className="min-h-screen p-4 overflow-auto">
+    <ActiveCategoriesProvider>
+      <div className="min-h-screen p-4 overflow-auto">
       <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold mb-4 text-center bg-white/50 backdrop-blur-md rounded-lg p-3 shadow">New Zealand Livestock Data Visualization</h1>
       
       {/* Main container - converts to column on mobile */}
@@ -142,7 +144,8 @@ function App() {
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ActiveCategoriesProvider>
   )
 }
 
