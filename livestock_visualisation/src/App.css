@@ -2,7 +2,7 @@
 
 /* Custom button styling */
 .btn {
-    @apply px-3 py-1.5 text-sm bg-gray-500 text-white font-medium rounded
+    @apply px-3 py-1.5 text-sm bg-gray-400 text-black font-bold rounded
                  sm:px-4 sm:py-2 sm:text-base
                  md:px-5 md:py-2.5
                  hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300

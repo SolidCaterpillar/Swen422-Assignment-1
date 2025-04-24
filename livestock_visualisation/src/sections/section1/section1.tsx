@@ -10,9 +10,9 @@ interface Section1Props {
 
 // your animal categories/colors…
 const animalCategories = {
-  "Beef cattle": "#d10000",
+  "Beef cattle": "#8B0000",
   "Dairy cattle": "#FFFDD0",
-  "Sheep":      "#808080",
+  "Sheep":      "#575757",
   "Deer":       "#964B00"
 } as const
 type Category = keyof typeof animalCategories
