@@ -62,7 +62,8 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
         if (key !== 'year') animals.add(key);
       });
     });
-    const animalArray = Array.from(animals);
+    // Exclude total cattle from display
+    const animalArray = Array.from(animals).filter(a => a.toLowerCase() !== 'total cattle');
     renderChart(data, animalArray, year);
   }, [location, year]);
 
@@ -116,9 +117,16 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
       .domain([0, d3.max(stackedData[stackedData.length - 1], d => d[1]) || 0])
       .range([height, 0]);
 
-    const color = d3.scaleOrdinal<string>()
-      .domain(animals)
-      .range(d3.schemeCategory10);
+    // Custom color map for specific animals
+    const colorMap: Record<string, string> = {
+      'Total cattle': '#1E90FF',
+      'Beef cattle': '#8B0000',
+      'Dairy cattle': '#FFFDD0',
+      'Deer': '#964B00',
+      'Sheep': '#575757',
+    };
+    // Fallback to light gray if not in map
+    const color = (key: string) => colorMap[key] || '#ccc';
 
     // Create the area generator
     const area = d3.area<d3.SeriesPoint<ChartData>>()

@@ -55,7 +55,9 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
     const data = getMultiYearData(location);
     if (!data.length) return;
     // determine animal types
-    const animals = Array.from(new Set(data.flatMap(d => Object.keys(d).filter(k => k !== 'year'))));
+    const animals = Array.from(new Set(
+      data.flatMap(d => Object.keys(d).filter(k => k !== 'year' && k !== 'Total cattle'))
+    ));
     setAnimalTypes(animals);
     renderChart(data, animals, year);
   }, [location, year]);
@@ -104,9 +106,19 @@ const Section2: React.FC<Section2Props> = ({ year, location }) => {
     const y = d3.scaleLinear()
       .domain([0, maxCount])
       .range([height, 0]);
-    const color = d3.scaleOrdinal<string>()
-      .domain(animals)
-      .range(d3.schemeCategory10);
+    // Custom color map for specific animals
+    const colorMap: Record<string, string> = {
+      'Total cattle': '#1E90FF',
+      'Beef cattle': '#8B0000',
+      'Dairy cattle': '#FFFDD0',
+      'Deer': '#964B00',
+      'Sheep': '#575757',
+    };
+
+// Replace default ordinal scale with custom color mapping
+const color = d3.scaleOrdinal<string>()
+  .domain(animals)
+  .range(animals.map(a => colorMap[a] || '#000000'));  
 
     // Add scatter points with interactivity
     animals.forEach(animal => {
