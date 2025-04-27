@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import * as d3 from 'd3'
 import { filterData } from '../../database/database'
 import { useActiveCategories, Category } from '../context'
@@ -42,7 +42,7 @@ const simplemaps_countrymap_mapinfo = {
     NZWKO: "Waikato",
     NZCAN: "Canterbury",
     NZWTC: "West Coast",
-    NZMWT: "Manawatu‑Whanganui",
+    NZMWT: "Manawatu-Whanganui",
     NZGIS: "Gisborne",
     NZHKB: "Hawke's Bay",
     NZNSN: "Nelson",
@@ -60,21 +60,22 @@ const simplemaps_countrymap_mapinfo = {
 
 const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
   const svgRef = useRef<SVGSVGElement|null>(null)
+  const tooltipRef = useRef<HTMLDivElement|null>(null)
   const { activeCategories, toggleCategory } = useActiveCategories()
 
-  // pre‐build your full list of years as strings:
-  const allYears = React.useMemo(
+  // build list of all years as strings
+  const allYears = useMemo(
     () => Array.from({ length: 2019 - 1971 + 1 }, (_, i) => (1971 + i).toString()),
     []
   )
 
   useEffect(() => {
-    if (!svgRef.current) return
+    if (!svgRef.current || !tooltipRef.current) return
     const { paths, names, initial_view } = simplemaps_countrymap_mapinfo
     const width  = initial_view.x2
     const height = initial_view.y2
 
-    // 1) compute every region‐sum for the **current** year…
+    // compute sums for current year
     const regionData: Record<string, number> = {}
     Object.keys(paths).forEach(region => {
       const resp = filterData(year, names[region as keyof typeof names])?.data || {}
@@ -83,103 +84,143 @@ const Section1: React.FC<Section1Props> = ({ year, setLocation }) => {
       regionData[region] = sum
     })
 
-    // 2) …BUT build your colour‐scale domain **across all years** so it never jumps:
+    // global min/max across all years
     const allSums: number[] = []
-    allYears.forEach(y => {
+    allYears.forEach(y =>
       Object.keys(paths).forEach(region => {
         const resp = filterData(y, names[region as keyof typeof names])?.data || {}
         let sum = 0
         activeCategories.forEach(cat => sum += Number(resp[cat] || 0))
         allSums.push(sum)
       })
-    })
+    )
     const [minVal = 0, maxVal = 1] = d3.extent(allSums) as [number, number]
-    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd)
-                         .domain([minVal, maxVal])
+    const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([minVal, maxVal])
 
-    // 3) draw…
+    // draw map
     const svg = d3.select(svgRef.current)
       .attr('viewBox', `0 0 ${width} ${height}`)
       .style('width','100%').style('height','auto')
+
     svg.selectAll('*').remove()
     const g = svg.append('g')
     const zoom = d3.zoom<SVGSVGElement,unknown>()
       .scaleExtent([1,8])
       .on('zoom', ({transform}) => g.attr('transform', transform))
 
+    const tooltip = d3.select(tooltipRef.current)
+      .style('position','absolute')
+      .style('pointer-events','none')
+      .style('background','#fff')
+      .style('padding','4px 8px')
+      .style('border','1px solid #ccc')
+      .style('border-radius','4px')
+      .style('font-size','12px')
+      .style('visibility','hidden')
+
     Object.keys(paths).forEach(key => {
       const count = regionData[key] || 0
+      const regionName = names[key as keyof typeof names]
+
       g.append('path')
         .attr('d', paths[key])
         .attr('fill', colorScale(count))
         .attr('stroke', '#333')
-        .attr('data-name', names[key as keyof typeof names])
         .on('mouseover', function() {
           d3.select(this).attr('stroke','#000').attr('stroke-width',2)
+          tooltip
+            .style('visibility', 'visible')
+            .text(`${regionName}: ${count.toLocaleString()}`)
+        })
+        .on('mousemove', function(event) {
+          // align tooltip close to cursor
+          tooltip
+            .style('left', `${event.pageX}px`)
+            .style('top', `${event.pageY - 150}px`)
         })
         .on('mouseout', function() {
           d3.select(this).attr('stroke','#333').attr('stroke-width',1)
+          tooltip.style('visibility','hidden')
         })
         .on('click', function(event) {
-          const regionName = d3.select(this).attr('data-name')!
           setLocation(regionName)
           event.stopPropagation()
-          // zoom in…
           const bbox = (this as SVGPathElement).getBBox()
-          const [x0,y0,x1,y1] = [bbox.x, bbox.y, bbox.x+bbox.width, bbox.y+bbox.height]
-          const scale = Math.min(8, 0.9/Math.max((x1-x0)/width,(y1-y0)/height))
-          const tx = width/2 - scale*(x0+x1)/2
-          const ty = height/2 - scale*(y0+y1)/2
+          const [x0,y0,x1,y1] = [bbox.x, bbox.y, bbox.x + bbox.width, bbox.y + bbox.height]
+          const scale = Math.min(8, 0.9 / Math.max((x1 - x0)/width, (y1 - y0)/height))
+          const tx = width/2 - scale*(x0 + x1)/2
+          const ty = height/2 - scale*(y0 + y1)/2
           const t = d3.zoomIdentity.translate(tx,ty).scale(scale)
           svg.transition().duration(750)
-             .call(zoom.transform as any, t, d3.pointer(event,svg.node()))
+             .call(zoom.transform as any, t, d3.pointer(event, svg.node()))
         })
     })
 
-    // legend (unchanged)…
-    const legendWidth = 300, legendHeight = 10
-    const legend = svg.append('g').attr('transform', `translate(${width-legendWidth-20},20)`)
-    const legendScale = d3.scaleLinear().domain([minVal, maxVal]).range([0,legendWidth])
+    // legend…
+    const legendWidth = 300
+    const legendHeight = 10
+    const legend = svg.append('g')
+      .attr('transform', `translate(${width - legendWidth - 20},20)`)
+    const legendScale = d3.scaleLinear().domain([minVal, maxVal]).range([0, legendWidth])
     const legendAxis = d3.axisBottom(legendScale).ticks(5)
     const gradient = svg.append('defs')
-      .append('linearGradient').attr('id','legend-gradient')
-      .attr('x1','0%').attr('x2','100%').attr('y1','0%').attr('y2','0%')
+      .append('linearGradient')
+        .attr('id','legend-gradient')
+        .attr('x1','0%').attr('x2','100%').attr('y1','0%').attr('y2','0%')
     gradient.append('stop').attr('offset','0%').attr('stop-color',d3.interpolateYlOrRd(0))
     gradient.append('stop').attr('offset','100%').attr('stop-color',d3.interpolateYlOrRd(1))
-    legend.append('rect').attr('width',legendWidth).attr('height',legendHeight)
-          .style('fill','url(#legend-gradient)')
-    legend.append('g').attr('transform',`translate(0,${legendHeight})`)
-          .call(legendAxis)
+
+    legend.append('rect')
+      .attr('width', legendWidth)
+      .attr('height', legendHeight)
+      .style('fill','url(#legend-gradient)')
+    legend.append('g')
+      .attr('transform', `translate(0,${legendHeight})`)
+      .call(legendAxis)
 
     svg.call(zoom)
-    // reset…
     svg.on('click', () => {
       setLocation('New Zealand')
       svg.transition().duration(750)
-        .call(zoom.transform as any, d3.zoomIdentity)
+         .call(zoom.transform as any, d3.zoomIdentity)
     })
-
   }, [year, activeCategories, allYears, setLocation])
 
   return (
-    <div>
-      <div style={{ margin: 4 }}>
-        { (Object.keys(animalCategories) as Category[]).map(cat => (
-            <button
-              key={cat}
-              onClick={() => toggleCategory(cat as Category)}
-              className={`btn ${activeCategories.has(cat) ? 'active' : ''}`}
-              style={{
-              backgroundColor: activeCategories.has(cat as Category) ? animalCategories[cat] : undefined,
-              borderColor: animalCategories[cat],
-              marginRight: '8px'
-              }}
-            >
-              {cat}
-            </button>
-        )) }
+    <div style={{ position: 'relative' }}>
+      {/* vertical side‐panel of checkboxes, larger font */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: 20,
+          display: 'flex',
+          flexDirection: 'column',
+          fontSize: '18px',
+          background: 'rgba(255,255,255,0.9)',
+          padding: '12px',
+          borderRadius: '6px',
+          boxShadow: '0 0 6px rgba(0,0,0,0.2)'
+        }}
+      >
+        {(Object.keys(animalCategories) as Category[]).map(cat => (
+          <label key={cat} style={{ marginBottom: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={activeCategories.has(cat)}
+              onChange={() => toggleCategory(cat)}
+              style={{ marginRight: '6px', transform: 'scale(1.2)' }}
+            />
+            {cat}
+          </label>
+        ))}
       </div>
+
+      {/* the SVG map */}
       <svg ref={svgRef}></svg>
+
+      {/* tooltip div */}
+      <div ref={tooltipRef}></div>
     </div>
   )
 }
