@@ -132,7 +132,7 @@ function App() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 h-auto md:h-1/2">
             {/* Section 3 */}
             <div className="bg-white/50 backdrop-blur-md rounded-lg shadow h-[250px] md:h-auto">
-              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-semibold text-base sm:text-lg md:text-xl lg:text-2xl">Distribution of Livestock at {location}</div>
+              <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg shadow text-center font-semibold text-base sm:text-lg md:text-xl lg:text-2xl">Distribution of Livestock in {location}</div>
               <Section3 year={year} location={location} />
             </div>
             
