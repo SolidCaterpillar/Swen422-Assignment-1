@@ -29,7 +29,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
 
   const chartRef = useRef<SVGSVGElement | null>(null)
 
-  // When year or location changes, load the data
+  // When year or location changes, load data
   useEffect(() => {
     const currentData = getCurrentData()
     setFilteredData(currentData)
@@ -164,7 +164,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .attr('stroke-width', 2)
         .attr('d', arcGen)
         .transition()
-        .duration(1000)
+        .duration(500)
         .attrTween('d', d => arcTween(d))
 
       // Add hover interactions
@@ -172,7 +172,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .on('mouseover', (event, d) => {
           d3.select(event.currentTarget)
             .transition()
-            .duration(200)
+            .duration(50)
             .ease(d3.easeBounce)
             .attr('d', arcHoverGen)
             .style('filter', 'url(#drop-shadow)')
@@ -183,7 +183,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .on('mouseout', (event) => {
           d3.select(event.currentTarget)
             .transition()
-            .duration(200)
+            .duration(50)
             .attr('d', arcGen)
             .style('filter', 'none')
           setHoveredSlice(null)
@@ -305,27 +305,31 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         </div>
 
       {/* Donut Chart Container */}
-      <div className="w-full aspect-square p-2 overflow-hidden">
-         <svg
-           ref={chartRef}
-           className="w-full h-full"
-           viewBox="0 0 400 400"
-           preserveAspectRatio="xMidYMid meet"
-         />
-       </div>
+      <div className="w-full aspect-square p-2 relative">
+          <svg
+              ref={chartRef}
+              className="w-full h-full"
+              viewBox="0 0 400 400"
+              preserveAspectRatio="xMidYMid meet"
+          />
 
-
-      {/* Hover display area at the bottom */}
-      <div className="mt-2 text-center">
-        {hoveredSlice ? (
-          <p>
-            <span className="font-bold">{hoveredSlice.animal}</span> - {hoveredSlice.count.toLocaleString()}
-          </p>
-        ) : (
-          <p className="text-gray-500">Hover over a slice to see details</p>
-        )}
+        {/* Center overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {hoveredSlice ? (
+              <div className="text-center font-bold text-lg">
+                {hoveredSlice.animal} – {hoveredSlice.count.toLocaleString()}
+              </div>
+            ) : null}
+        </div>
       </div>
-    </div>
+
+      {/* Footer */}
+      <div className="mt-2 text-center">
+        <p className="text-gray-500">
+          Hover over a slice to see details
+        </p>
+      </div>
+  </div>
   )
 }
 
