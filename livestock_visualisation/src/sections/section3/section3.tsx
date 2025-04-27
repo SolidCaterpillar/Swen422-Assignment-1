@@ -29,7 +29,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
 
   const chartRef = useRef<SVGSVGElement | null>(null)
 
-  // When year or location changes, load data
+  // When year or location changes, load the data
   useEffect(() => {
     const currentData = getCurrentData()
     setFilteredData(currentData)
@@ -97,14 +97,14 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
       console.log('[Section3] ChartData:', chartData)
 
       // Dimensions and radius
-      const w = chartRef.current.clientWidth
-      const h = chartRef.current.clientHeight
-      const radius = Math.min(w, h) / 2
+      const size = 400            // drawing coordinate system is 0→400 in both directions
+      const radius = size / 2
 
-      // Create a centered group
+      // tell D3 to treat the SVG as a 400×400 viewport
       const svg = d3.select(chartRef.current)
-        .append('g')
-        .attr('transform', `translate(${w / 2}, ${h / 2})`)
+          .attr('viewBox', `0 0 ${size} ${size}`)
+          .append('g')
+          .attr('transform', `translate(${radius},${radius})`)
 
       // Add a drop-shadow filter
       const defs = svg.append('defs')
@@ -124,11 +124,14 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
       feMerge.append('feMergeNode').attr('in', 'offsetBlur')
       feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
-      // Use fixed colors (red, green, blue)
-      const colorList = ['red', 'green', 'blue']
+      // Use fixed colors 
+      const mainColorList      = ['#575757', '#8B0000', '#964B00']
+      const breakdownColorList = ['#8B0000', '#FFFDD0']
+      const colorList = showCattleBreakdown ? breakdownColorList : mainColorList
+
       const colorScale = d3.scaleOrdinal<string>()
         .domain(chartData.map(d => d.animal))
-        .range(colorList.slice(0, chartData.length))
+        .range(colorList)
 
       // Create a pie layout
       const pie = d3.pie<DonutData>()
@@ -227,10 +230,13 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   const rawRows = showCattleBreakdown ? detailTableData : mainTableData
   const tableRows = rawRows.filter(d => selectedAnimals.includes(d.animal))
   const legendData = tableRows.map(item => item.animal)
-  const colorList = ['red', 'green', 'blue']
+  const legendColorList = showCattleBreakdown
+  ? ['#8B0000', '#FFFDD0']
+  : ['#575757', '#8B0000', '#964B00']
+
   const legendColorScale = d3.scaleOrdinal<string>()
-    .domain(legendData)
-    .range(colorList.slice(0, legendData.length))
+  .domain(legendData)
+  .range(legendColorList)
 
   // Define available animals for checkboxes
   const availableAnimals = showCattleBreakdown ? availableAnimalsDetail : availableAnimalsMain
@@ -246,7 +252,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   }
 
   return (
-    <div className="h-[90%] w-full flex flex-col p-2 relative">
+    <div className="w-full flex flex-col p-2 relative">
       {/* Toggle Button */}
       <div className="mb-2">
         {!showCattleBreakdown ? (
@@ -299,9 +305,15 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         </div>
 
       {/* Donut Chart Container */}
-      <div className="flex-grow relative" style={{ minHeight: '300px' }}>
-        <svg ref={chartRef} width="100%" height="100%"></svg>
-      </div>
+      <div className="w-full aspect-square p-2 overflow-hidden">
+         <svg
+           ref={chartRef}
+           className="w-full h-full"
+           viewBox="0 0 400 400"
+           preserveAspectRatio="xMidYMid meet"
+         />
+       </div>
+
 
       {/* Hover display area at the bottom */}
       <div className="mt-2 text-center">
