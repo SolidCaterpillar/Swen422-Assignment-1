@@ -29,7 +29,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
 
   const chartRef = useRef<SVGSVGElement | null>(null)
 
-  // When year or location changes, load data
+  // When year or location changes, load the data
   useEffect(() => {
     const currentData = getCurrentData()
     setFilteredData(currentData)
