@@ -103,10 +103,19 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
       .nice()
       .range([height, 0])
 
-    // Color scale for different animals
-    const color = d3.scaleOrdinal<string>()
-      .domain(animals)
-      .range(d3.schemeCategory10)
+    // Custom color map for different animals
+    const colorMap: { [key: string]: string } = {
+      'Total cattle': '#1E90FF',
+      'Beef cattle': '#8B0000',
+      'Dairy cattle': '#FFFDD0',
+      'Deer': '#964B00',
+      'Sheep': '#575757'
+    };
+
+    // Color function that uses our custom map with a fallback to d3's scheme
+    const getColor = (animal: string): string => {
+      return colorMap[animal] || d3.schemeCategory10[animals.indexOf(animal) % 10];
+    };
 
     // Line style variations (solid, dashed, dotted, etc.)
     const lineStyles = [
@@ -209,7 +218,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
         svg.append('path')
           .datum(animalData)
           .attr('fill', 'none')
-          .attr('stroke', color(animal))
+          .attr('stroke', getColor(animal))
           .attr('stroke-width', 2)
           .attr('stroke-dasharray', lineStyles[i % lineStyles.length])
           .attr('d', line as any)
@@ -222,7 +231,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
           .attr('cx', d => x(d.year) || 0)
           .attr('cy', d => y(d.count as number))
           .attr('r', 4)
-          .attr('fill', color(animal))
+          .attr('fill', getColor(animal))
           .attr('stroke', 'white')
           .attr('stroke-width', 1)
           .on('mouseover', function (event, d) {
@@ -268,7 +277,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
         .attr('y1', 7.5)
         .attr('x2', 30)
         .attr('y2', 7.5)
-        .attr('stroke', color(animal))
+        .attr('stroke', getColor(animal))
         .attr('stroke-width', 2)
         .attr('stroke-dasharray', lineStyles[i % lineStyles.length])
 
@@ -277,7 +286,7 @@ const Section4: React.FC<Section4Props> = ({ year, location }) => {
         .attr('cx', 15)
         .attr('cy', 7.5)
         .attr('r', 4)
-        .attr('fill', color(animal))
+        .attr('fill', getColor(animal))
         .attr('stroke', 'white')
         .attr('stroke-width', 1)
 
