@@ -4,7 +4,6 @@
 ## Accessing Figma Files and Youtube
 To access our youtube video and figma files for this project,\
 Youtube: https://youtu.be/YPsSBq_ti9k?si=tzQ9uwJm6Ms5N0WF \
-Figma:
 
 ## How to run it 
 After you clone the repository, you need to download Node.js and npm from [nodejs.org](https://nodejs.org/en/download) if you don't have them installed. Once downloaded, restart your PC and check the version in the terminal.\
