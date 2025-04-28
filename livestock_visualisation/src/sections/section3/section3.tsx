@@ -97,14 +97,14 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
       console.log('[Section3] ChartData:', chartData)
 
       // Dimensions and radius
-      const w = chartRef.current.clientWidth
-      const h = chartRef.current.clientHeight
-      const radius = Math.min(w, h) / 2
+      const size = 400            // drawing coordinate system is 0→400 in both directions
+      const radius = size / 2
 
-      // Create a centered group
+      // tell D3 to treat the SVG as a 400×400 viewport
       const svg = d3.select(chartRef.current)
-        .append('g')
-        .attr('transform', `translate(${w / 2}, ${h / 2})`)
+          .attr('viewBox', `0 0 ${size} ${size}`)
+          .append('g')
+          .attr('transform', `translate(${radius},${radius})`)
 
       // Add a drop-shadow filter
       const defs = svg.append('defs')
@@ -124,11 +124,14 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
       feMerge.append('feMergeNode').attr('in', 'offsetBlur')
       feMerge.append('feMergeNode').attr('in', 'SourceGraphic')
 
-      // Use fixed colors (red, green, blue)
-      const colorList = ['red', 'green', 'blue']
+      // Use fixed colors 
+      const mainColorList      = ['#575757', '#8B0000', '#964B00']
+      const breakdownColorList = ['#8B0000', '#FFFDD0']
+      const colorList = showCattleBreakdown ? breakdownColorList : mainColorList
+
       const colorScale = d3.scaleOrdinal<string>()
         .domain(chartData.map(d => d.animal))
-        .range(colorList.slice(0, chartData.length))
+        .range(colorList)
 
       // Create a pie layout
       const pie = d3.pie<DonutData>()
@@ -161,7 +164,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .attr('stroke-width', 2)
         .attr('d', arcGen)
         .transition()
-        .duration(1000)
+        .duration(500)
         .attrTween('d', d => arcTween(d))
 
       // Add hover interactions
@@ -169,7 +172,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .on('mouseover', (event, d) => {
           d3.select(event.currentTarget)
             .transition()
-            .duration(200)
+            .duration(50)
             .ease(d3.easeBounce)
             .attr('d', arcHoverGen)
             .style('filter', 'url(#drop-shadow)')
@@ -180,7 +183,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         .on('mouseout', (event) => {
           d3.select(event.currentTarget)
             .transition()
-            .duration(200)
+            .duration(50)
             .attr('d', arcGen)
             .style('filter', 'none')
           setHoveredSlice(null)
@@ -227,10 +230,13 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   const rawRows = showCattleBreakdown ? detailTableData : mainTableData
   const tableRows = rawRows.filter(d => selectedAnimals.includes(d.animal))
   const legendData = tableRows.map(item => item.animal)
-  const colorList = ['red', 'green', 'blue']
+  const legendColorList = showCattleBreakdown
+  ? ['#8B0000', '#FFFDD0']
+  : ['#575757', '#8B0000', '#964B00']
+
   const legendColorScale = d3.scaleOrdinal<string>()
-    .domain(legendData)
-    .range(colorList.slice(0, legendData.length))
+  .domain(legendData)
+  .range(legendColorList)
 
   // Define available animals for checkboxes
   const availableAnimals = showCattleBreakdown ? availableAnimalsDetail : availableAnimalsMain
@@ -246,7 +252,7 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
   }
 
   return (
-    <div className="h-full w-full flex flex-col p-2 relative">
+    <div className="w-full flex flex-col p-2 relative">
       {/* Toggle Button */}
       <div className="mb-2">
         {!showCattleBreakdown ? (
@@ -299,21 +305,31 @@ const Section3: React.FC<Section3Props> = ({ year, location }) => {
         </div>
 
       {/* Donut Chart Container */}
-      <div className="flex-grow relative" style={{ minHeight: '300px' }}>
-        <svg ref={chartRef} width="100%" height="100%"></svg>
+      <div className="w-full aspect-square p-2 relative">
+          <svg
+              ref={chartRef}
+              className="w-full h-full"
+              viewBox="0 0 400 400"
+              preserveAspectRatio="xMidYMid meet"
+          />
+
+        {/* Center overlay */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            {hoveredSlice ? (
+              <div className="text-center font-bold text-lg">
+                {hoveredSlice.animal} – {hoveredSlice.count.toLocaleString()}
+              </div>
+            ) : null}
+        </div>
       </div>
 
-      {/* Hover display area at the bottom */}
+      {/* Footer */}
       <div className="mt-2 text-center">
-        {hoveredSlice ? (
-          <p>
-            <span className="font-bold">{hoveredSlice.animal}</span> - {hoveredSlice.count.toLocaleString()}
-          </p>
-        ) : (
-          <p className="text-gray-500">Hover over a slice to see details</p>
-        )}
+        <p className="text-gray-500">
+          Hover over a slice to see details
+        </p>
       </div>
-    </div>
+  </div>
   )
 }
 
