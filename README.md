@@ -3,7 +3,7 @@
 
 ## Accessing Figma Files and Youtube
 To access our youtube video and figma files for this project,\
-Youtube:\
+Youtube: https://youtu.be/YPsSBq_ti9k?si=tzQ9uwJm6Ms5N0WF \
 Figma:
 
 ## How to run it 
